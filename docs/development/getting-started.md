@@ -26,6 +26,8 @@ Keycloak listens on `http://127.0.0.1:8080` and imports the `vplatform` developm
 
 The realm contains no users. Create disposable development identities through the Keycloak administration console when interactive testing is later approved. Never encode real users, passwords, firm access, roles, or permissions in the realm import.
 
+See [the Keycloak smoke-test procedure](keycloak-smoke-test.md) to verify discovery, JWKS, PKCE login, and the authenticated Shared Core endpoint.
+
 Stop the services without deleting their named volumes:
 
 ```bash

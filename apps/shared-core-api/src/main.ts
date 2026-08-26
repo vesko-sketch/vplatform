@@ -13,6 +13,7 @@ async function bootstrap(): Promise<void> {
     .setTitle('V Platform Shared Core API')
     .setDescription('Shared identity metadata and platform authorization API.')
     .setVersion('0.1.0')
+    .addBearerAuth()
     .build();
 
   SwaggerModule.setup('openapi', app, SwaggerModule.createDocument(app, openApiConfig));

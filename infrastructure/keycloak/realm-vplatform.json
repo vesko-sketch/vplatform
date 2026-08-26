@@ -79,6 +79,18 @@
             "access.token.claim": "true",
             "lightweight.claim": "false"
           }
+        },
+        {
+          "name": "shared-core-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "shared-core-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "lightweight.claim": "false"
+          }
         }
       ]
     },

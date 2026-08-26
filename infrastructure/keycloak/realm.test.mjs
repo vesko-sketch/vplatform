@@ -38,14 +38,14 @@ test('API clients are bearer-only audiences and cannot initiate login', () => {
   }
 });
 
-test('web access tokens contain only their intended web and API audiences', () => {
+test('web access tokens contain only their intended audiences', () => {
   const audiences = (clientId) =>
     clients
       .get(clientId)
       .protocolMappers.map((mapper) => mapper.config['included.client.audience'])
       .sort();
 
-  assert.deepEqual(audiences('office-web'), ['office-api', 'office-web']);
+  assert.deepEqual(audiences('office-web'), ['office-api', 'office-web', 'shared-core-api']);
   assert.deepEqual(audiences('accounting-web'), ['accounting-api', 'accounting-web']);
 });
 

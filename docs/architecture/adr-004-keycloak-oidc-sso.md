@@ -19,6 +19,8 @@ The future identity link maps an immutable Keycloak issuer and subject pair (`is
 
 Backend APIs validate tokens and then enforce current Shared Core application, firm, role, permission, and resource access. Client-supplied `firm_id` is never trusted without server-side authorization.
 
+Phase 2B.1 validates Shared Core API bearer tokens against the exact trusted issuer, the `shared-core-api` audience, Keycloak's remote JWKS, token time claims, and the RS256 signing algorithm with a five-second default clock tolerance. Successful JWT validation establishes authentication only. No token role, username, email, or other claim becomes V Platform authorization.
+
 The reproducible development realm is imported by Keycloak at container startup. It contains no development users, business roles, firm grants, application grants, or client secrets. Those authorization concepts remain in Shared Core.
 
 ## Consequences
