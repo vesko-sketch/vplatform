@@ -1,6 +1,6 @@
 # Development Keycloak smoke test
 
-This procedure verifies Keycloak discovery, the imported realm, browser login, the `shared-core-api` audience, JWKS signature validation, and the authenticated Shared Core endpoint. It does not use PostgreSQL or establish V Platform authorization.
+This procedure verifies Keycloak discovery, the imported realm, browser login, the `shared-core-api` audience, JWKS signature validation, and the authenticated Shared Core endpoint. `/auth/me` also performs read-only platform-identity resolution; it does not establish firm, application, role, permission, or resource authorization.
 
 ## 1. Start and inspect Keycloak
 
@@ -67,6 +67,7 @@ OIDC_SHARED_CORE_API_CLIENT_ID=shared-core-api \
 OIDC_SHARED_CORE_API_AUDIENCE=shared-core-api \
 OIDC_SHARED_CORE_API_SIGNING_ALGORITHM=RS256 \
 OIDC_CLOCK_TOLERANCE_SECONDS=5 \
+SHARED_CORE_DATABASE_URL='postgresql://shared_core_api:LOCAL_SECRET@localhost:5433/shared_core' \
 pnpm --filter @vplatform/shared-core-api dev
 ```
 
@@ -78,7 +79,7 @@ curl --fail \
   http://localhost:3001/auth/me
 ```
 
-The response contains only issuer, subject, audience, and optional preferred username. Email, realm/client roles, firm access, and V Platform permissions are not returned or interpreted.
+An authenticated Keycloak identity without a persisted link receives HTTP 403 with `IDENTITY_NOT_LINKED`. A known active link to an active Shared Core user receives issuer, subject, audience, optional preferred username, `platformUserId`, and `identityLinkId`. Email, realm/client roles, firm access, and V Platform permissions are not returned or interpreted.
 
 Also verify rejection:
 

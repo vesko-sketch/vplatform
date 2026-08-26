@@ -1,10 +1,11 @@
-import type { PrismaClient } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
 
 import type {
   ExternalIdentityRepository,
   ExternalIdentityResolution,
   ExternalIdentityStatus,
 } from './external-identity.repository.js';
+import { PrismaService } from './prisma.service.js';
 
 const knownStatuses = new Set<ExternalIdentityStatus>(['active', 'disabled', 'unlinked']);
 
@@ -15,8 +16,9 @@ function asExternalIdentityStatus(value: string): ExternalIdentityStatus {
   return value as ExternalIdentityStatus;
 }
 
+@Injectable()
 export class PrismaExternalIdentityRepository implements ExternalIdentityRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findByIssuerAndSubject(
     issuer: string,

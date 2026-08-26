@@ -68,7 +68,7 @@ pnpm test
 pnpm build
 ```
 
-The Nest APIs validate their required issuer, client ID, and audience configuration before starting. They publish health routes at `/health` and generated OpenAPI documentation at `/openapi`. The Next.js applications expose `/api/health`. No login or token-verification behavior exists yet.
+The Nest APIs validate their required issuer, client ID, and audience configuration before starting. They publish health routes at `/health` and generated OpenAPI documentation at `/openapi`. The Next.js applications expose `/api/health`. `shared-core-api` validates Keycloak access tokens and resolves an exact `(issuer, subject)` identity link at `/auth/me`; this does not yet grant firm or application authorization.
 
 ## Application responsibilities
 
@@ -84,5 +84,7 @@ The Nest APIs validate their required issuer, client ID, and audience configurat
 Office may be exposed through public ingress. Accounting web/API must remain behind a VPN or equivalent protected network. Public applications never receive `ACCOUNTING_DATABASE_URL`, and frontend bundles never receive any database URL.
 
 The root `.env.example` is a variable catalog, not an instruction to inject every value into every process. Deployment definitions must provide each backend only its allowed database variable.
+
+`shared-core-api` uses `SHARED_CORE_DATABASE_URL` with the non-owner `shared_core_api` runtime role. `SHARED_CORE_MIGRATION_DATABASE_URL` is an operator-only owner credential and must not be present in the normal API process environment.
 
 The Accounting OIDC clients do not weaken the private boundary. `accounting-web` and `accounting-api` must be attached only to the protected Accounting network when application containers are added. A token carrying the `accounting-api` audience is necessary for future API access but is never sufficient to cross the VPN, firewall, or private ingress boundary.

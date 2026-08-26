@@ -1,7 +1,7 @@
-import type { PrismaClient } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PrismaExternalIdentityRepository } from './prisma-external-identity.repository.js';
+import type { PrismaService } from './prisma.service.js';
 
 describe('PrismaExternalIdentityRepository', () => {
   it('looks up only the exact issuer and subject and returns resolution state', async () => {
@@ -13,7 +13,7 @@ describe('PrismaExternalIdentityRepository', () => {
     });
     const prisma = {
       user_external_identities: { findUnique },
-    } as unknown as PrismaClient;
+    } as unknown as PrismaService;
     const repository = new PrismaExternalIdentityRepository(prisma);
 
     await expect(
@@ -48,7 +48,7 @@ describe('PrismaExternalIdentityRepository', () => {
     const findUnique = vi.fn().mockResolvedValue(null);
     const prisma = {
       user_external_identities: { findUnique },
-    } as unknown as PrismaClient;
+    } as unknown as PrismaService;
     const repository = new PrismaExternalIdentityRepository(prisma);
 
     await expect(
@@ -69,7 +69,7 @@ describe('PrismaExternalIdentityRepository', () => {
           users: { is_active: true },
         }),
       },
-    } as unknown as PrismaClient;
+    } as unknown as PrismaService;
     const repository = new PrismaExternalIdentityRepository(prisma);
 
     await expect(
