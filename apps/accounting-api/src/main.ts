@@ -4,8 +4,10 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module.js';
+import { loadAccountingApiOidcConfig } from './config/oidc.config.js';
 
 async function bootstrap(): Promise<void> {
+  loadAccountingApiOidcConfig();
   const app = await NestFactory.create(AppModule);
   const openApiConfig = new DocumentBuilder()
     .setTitle('V Accounting API')

@@ -53,6 +53,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^11.2.3
         version: 11.4.7(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@11.2.1)(reflect-metadata@0.2.2)
+      '@vplatform/identity-config':
+        specifier: workspace:*
+        version: link:../../packages/identity-config
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -66,6 +69,9 @@ importers:
 
   apps/accounting-web:
     dependencies:
+      '@vplatform/identity-config':
+        specifier: workspace:*
+        version: link:../../packages/identity-config
       next:
         specifier: ^16.3.2
         version: 16.3.2(@types/node@24.13.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -97,6 +103,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^11.2.3
         version: 11.4.7(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@11.2.1)(reflect-metadata@0.2.2)
+      '@vplatform/identity-config':
+        specifier: workspace:*
+        version: link:../../packages/identity-config
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -110,6 +119,9 @@ importers:
 
   apps/office-web:
     dependencies:
+      '@vplatform/identity-config':
+        specifier: workspace:*
+        version: link:../../packages/identity-config
       next:
         specifier: ^16.3.2
         version: 16.3.2(@types/node@24.13.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -141,6 +153,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^11.2.3
         version: 11.4.7(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@11.2.1)(reflect-metadata@0.2.2)
+      '@vplatform/identity-config':
+        specifier: workspace:*
+        version: link:../../packages/identity-config
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -151,6 +166,8 @@ importers:
       '@nestjs/testing':
         specifier: ^11.1.9
         version: 11.2.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@11.2.1)(@nestjs/platform-express@11.2.1)
+
+  packages/identity-config: {}
 
   services/document-worker: {}
 

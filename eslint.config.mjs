@@ -30,8 +30,9 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.config.{js,mjs,ts}', '**/*.d.ts'],
+    files: ['**/*.{js,mjs}', '**/*.config.ts', '**/*.d.ts'],
     extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: { globals: globals.node },
   },
   prettier,
 );

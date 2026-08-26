@@ -8,10 +8,11 @@
     "pnpm": ">=11.24.0"
   },
   "scripts": {
-    "dev": "pnpm --parallel --stream -r dev",
+    "dev": "pnpm --filter @vplatform/identity-config build && pnpm --parallel --stream -r dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "pnpm test:realm && pnpm -r test",
+    "test:realm": "node --test infrastructure/keycloak/realm.test.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

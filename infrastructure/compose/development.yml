@@ -1,6 +1,33 @@
 name: vplatform-development
 
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7
+    command: ['start-dev', '--import-realm']
+    restart: unless-stopped
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-for-local-development}
+      KC_HEALTH_ENABLED: 'true'
+      KC_HTTP_MANAGEMENT_PORT: '9000'
+    ports:
+      - '127.0.0.1:8080:8080'
+    volumes:
+      - ../keycloak/realm-vplatform.json:/opt/keycloak/data/import/realm-vplatform.json:ro
+    networks:
+      - public-edge
+      - platform-internal
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
   redis:
     image: redis:8.2-alpine
     command: ['redis-server', '--appendonly', 'yes']
