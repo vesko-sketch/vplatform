@@ -34,6 +34,23 @@ Stop the services without deleting their named volumes:
 pnpm infra:down
 ```
 
+## Disposable Shared Core database
+
+The Shared Core baseline and proposed migrations are tested against a separate PostgreSQL 16.13 container using tmpfs-only storage and localhost port `55432`. It does not join the live PostgreSQL container's networks and contains no Office or Accounting database.
+
+```bash
+pnpm shared-core-db:up
+pnpm shared-core-db:down
+```
+
+Stopping/removing this container destroys its data. Prisma commands must receive an explicit disposable URL such as:
+
+```text
+postgresql://vplatform_dev:local-disposable-only@127.0.0.1:55432/shared_core_migrate
+```
+
+Never substitute a live URL into `prisma db push` or `prisma migrate dev`; those commands are prohibited for the existing databases.
+
 ## Run and verify the workspace
 
 Start all application development processes:

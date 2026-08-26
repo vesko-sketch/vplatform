@@ -35,12 +35,12 @@ The exact table and column names will be chosen only after approved Shared Core 
 
 - `(issuer, subject)` must be globally unique among live links.
 - An external identity can map to only one platform user.
-- A platform user may have more than one external identity only if a future, explicit account-recovery or provider-migration requirement approves it.
+- A platform user may have multiple external identities.
 - Issuer comparison must use a documented normalized form; an arbitrary token-supplied issuer is never trusted.
 - A link change is security-sensitive and must be audited.
 - Deleting or disabling a link must not delete the Shared Core user, firm memberships, or audit history.
 
-Whether historical unlinked tuples remain permanently reserved requires a Phase 2B decision. Permanent reservation is safer against accidental reassignment.
+The unconditional `(issuer, subject)` unique constraint permanently reserves disabled and unlinked historical tuples against accidental reassignment.
 
 ## First-login provisioning
 
@@ -78,9 +78,6 @@ Active sessions and refresh tokens should be revoked in Keycloak when an identit
 
 ## Deferred decisions
 
-- Exact Shared Core table/column names after introspection
-- Whether multiple active external identities per platform user are allowed
-- Whether unlinked `(issuer, subject)` tuples are permanently reserved
 - Invitation/linking-intent storage and expiry
 - Required MFA/authentication context for linking and sensitive operations
 - Keycloak user lifecycle event delivery versus periodic reconciliation

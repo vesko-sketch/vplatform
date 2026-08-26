@@ -5,12 +5,14 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "pnpm prisma:generate && tsc -p tsconfig.build.json",
+    "prisma:generate": "env XDG_CACHE_HOME=../../.cache prisma generate --schema prisma/schema.prisma",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
+    "@prisma/client": "6.19.1",
     "@vplatform/identity-config": "workspace:*",
     "@nestjs/common": "^11.1.9",
     "@nestjs/core": "^11.1.9",
@@ -21,6 +23,7 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
-    "@nestjs/testing": "^11.1.9"
+    "@nestjs/testing": "^11.1.9",
+    "prisma": "6.19.1"
   }
 }

@@ -1,0 +1,25 @@
+name: vplatform-shared-core-database-development
+
+services:
+  shared-core-postgres-dev:
+    image: postgres:16.13
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: vplatform_dev
+      POSTGRES_PASSWORD: local-disposable-only
+    ports:
+      - '127.0.0.1:55432:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - shared-core-database-dev
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vplatform_dev -d postgres']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+networks:
+  shared-core-database-dev:
+    name: vplatform-shared-core-database-dev

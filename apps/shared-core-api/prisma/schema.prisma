@@ -1,0 +1,401 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("SHARED_CORE_DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model applications {
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                   String                   @unique @db.VarChar(50)
+  name                   String                   @db.VarChar(255)
+  description            String?
+  access_zone            String                   @db.VarChar(20)
+  is_active              Boolean                  @default(true)
+  metadata               Json                     @default("{}")
+  row_version            BigInt                   @default(1)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  firm_applications      firm_applications[]
+  user_firm_applications user_firm_applications[]
+}
+
+model audit_log {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firm_id        String?  @db.Uuid
+  user_id        String?  @db.Uuid
+  entity_type    String   @db.VarChar(100)
+  entity_id      String?  @db.Uuid
+  action         String   @db.VarChar(50)
+  old_values     Json?
+  new_values     Json?
+  reason         String?
+  source_type    String?  @db.VarChar(50)
+  request_id     String?  @db.Uuid
+  correlation_id String?  @db.Uuid
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([entity_type, entity_id], map: "idx_audit_log_entity")
+  @@index([firm_id, created_at], map: "idx_audit_log_firm_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model firm_applications {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firm_id        String       @db.Uuid
+  application_id String       @db.Uuid
+  valid_from     DateTime?    @db.Date
+  valid_to       DateTime?    @db.Date
+  is_active      Boolean      @default(true)
+  metadata       Json         @default("{}")
+  row_version    BigInt       @default(1)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  applications   applications @relation(fields: [application_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  firms          firms        @relation(fields: [firm_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([firm_id, application_id], map: "firm_applications_firm_application_key")
+  @@index([application_id], map: "idx_firm_applications_application")
+}
+
+model firm_group_members {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firm_group_id String      @db.Uuid
+  firm_id       String      @db.Uuid
+  member_role   String?     @db.VarChar(50)
+  valid_from    DateTime?   @db.Date
+  valid_to      DateTime?   @db.Date
+  is_active     Boolean     @default(true)
+  notes         String?
+  metadata      Json        @default("{}")
+  row_version   BigInt      @default(1)
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime    @default(now()) @db.Timestamptz(6)
+  firm_groups   firm_groups @relation(fields: [firm_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  firms         firms       @relation(fields: [firm_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model firm_group_purpose_assignments {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firm_group_id       String              @db.Uuid
+  purpose_id          String              @db.Uuid
+  is_active           Boolean             @default(true)
+  metadata            Json                @default("{}")
+  row_version         BigInt              @default(1)
+  created_at          DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime            @default(now()) @db.Timestamptz(6)
+  firm_groups         firm_groups         @relation(fields: [firm_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  firm_group_purposes firm_group_purposes @relation(fields: [purpose_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([firm_group_id, purpose_id])
+}
+
+model firm_group_purposes {
+  id                             String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                           String                           @unique @db.VarChar(50)
+  name                           String                           @db.VarChar(255)
+  description                    String?
+  is_active                      Boolean                          @default(true)
+  metadata                       Json                             @default("{}")
+  row_version                    BigInt                           @default(1)
+  created_at                     DateTime                         @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime                         @default(now()) @db.Timestamptz(6)
+  firm_group_purpose_assignments firm_group_purpose_assignments[]
+}
+
+model firm_groups {
+  id                             String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                           String                           @unique @db.VarChar(50)
+  name                           String                           @db.VarChar(255)
+  description                    String?
+  default_currency_id            String?                          @db.Uuid
+  is_active                      Boolean                          @default(true)
+  metadata                       Json                             @default("{}")
+  row_version                    BigInt                           @default(1)
+  created_at                     DateTime                         @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime                         @default(now()) @db.Timestamptz(6)
+  firm_group_members             firm_group_members[]
+  firm_group_purpose_assignments firm_group_purpose_assignments[]
+  ref_currencies                 ref_currencies?                  @relation(fields: [default_currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model firms {
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                      String                      @unique @db.VarChar(50)
+  name                      String                      @db.VarChar(255)
+  short_name                String?                     @db.VarChar(255)
+  legal_form_id             String?                     @db.Uuid
+  country_id                String                      @db.Uuid
+  registration_number       String?                     @db.VarChar(50)
+  base_currency_id          String                      @db.Uuid
+  default_language_id       String?                     @db.Uuid
+  timezone                  String                      @default("Europe/Sofia") @db.VarChar(100)
+  is_active                 Boolean                     @default(true)
+  source_system             String?                     @db.VarChar(100)
+  external_id               String?                     @db.VarChar(255)
+  metadata                  Json                        @default("{}")
+  row_version               BigInt                      @default(1)
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  firm_applications         firm_applications[]
+  firm_group_members        firm_group_members[]
+  ref_currencies            ref_currencies              @relation(fields: [base_currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ref_countries             ref_countries               @relation(fields: [country_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ref_languages             ref_languages?              @relation(fields: [default_language_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ref_legal_forms           ref_legal_forms?            @relation(fields: [legal_form_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  integration_outbox        integration_outbox[]
+  user_firm_applications    user_firm_applications[]
+  user_firm_roles           user_firm_roles[]
+  user_permission_overrides user_permission_overrides[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model integration_outbox {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firm_id                 String?   @db.Uuid
+  entity_type             String    @db.VarChar(100)
+  entity_id               String    @db.Uuid
+  event_type              String    @db.VarChar(100)
+  payload                 Json      @default("{}")
+  processing_status       String    @default("pending") @db.VarChar(20)
+  retry_count             Int       @default(0)
+  last_error              String?
+  correlation_id          String?   @db.Uuid
+  occurred_at             DateTime  @default(now()) @db.Timestamptz(6)
+  processed_at            DateTime? @db.Timestamptz(6)
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  entity_version          BigInt?
+  source_application_code String?   @db.VarChar(50)
+  firms                   firms?    @relation(fields: [firm_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([firm_id, entity_type, entity_id], map: "idx_integration_outbox_firm_entity")
+  @@index([processing_status, occurred_at], map: "idx_integration_outbox_pending")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model permission_resource_scopes {
+  id                          String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_firm_role_id           String?                    @db.Uuid
+  user_permission_override_id String?                    @db.Uuid
+  permission_id               String                     @db.Uuid
+  resource_type               String                     @db.VarChar(100)
+  resource_id                 String?                    @db.Uuid
+  effect                      String                     @default("allow") @db.VarChar(10)
+  metadata                    Json                       @default("{}")
+  row_version                 BigInt                     @default(1)
+  created_at                  DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime                   @default(now()) @db.Timestamptz(6)
+  permissions                 permissions                @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_firm_roles             user_firm_roles?           @relation(fields: [user_firm_role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_permission_overrides   user_permission_overrides? @relation(fields: [user_permission_override_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model permissions {
+  id                         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                       String                       @unique @db.VarChar(100)
+  name                       String                       @db.VarChar(255)
+  description                String?
+  requires_reason            Boolean                      @default(false)
+  is_active                  Boolean                      @default(true)
+  metadata                   Json                         @default("{}")
+  row_version                BigInt                       @default(1)
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  permission_resource_scopes permission_resource_scopes[]
+  role_permissions           role_permissions[]
+  user_permission_overrides  user_permission_overrides[]
+}
+
+model ref_countries {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  iso2_code     String   @unique @db.VarChar(2)
+  iso3_code     String?  @db.VarChar(3)
+  name_bg       String   @db.VarChar(255)
+  name_en       String?  @db.VarChar(255)
+  is_eu_member  Boolean  @default(false)
+  is_eea_member Boolean  @default(false)
+  is_active     Boolean  @default(true)
+  source_system String?  @db.VarChar(100)
+  external_id   String?  @db.VarChar(255)
+  metadata      Json     @default("{}")
+  row_version   BigInt   @default(1)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+  firms         firms[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ref_currencies {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  iso_code       String        @unique @db.VarChar(10)
+  name           String        @db.VarChar(255)
+  decimal_places Int           @default(2)
+  is_crypto      Boolean       @default(false)
+  is_active      Boolean       @default(true)
+  source_system  String?       @db.VarChar(100)
+  external_id    String?       @db.VarChar(255)
+  metadata       Json          @default("{}")
+  row_version    BigInt        @default(1)
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  firm_groups    firm_groups[]
+  firms          firms[]
+}
+
+model ref_languages {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  iso_code    String   @unique @db.VarChar(10)
+  name_bg     String   @db.VarChar(100)
+  name_en     String?  @db.VarChar(100)
+  is_active   Boolean  @default(true)
+  metadata    Json     @default("{}")
+  row_version BigInt   @default(1)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+  firms       firms[]
+}
+
+model ref_legal_forms {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  short_name  String   @db.VarChar(100)
+  full_name   String?  @db.VarChar(500)
+  is_active   Boolean  @default(true)
+  metadata    Json     @default("{}")
+  row_version BigInt   @default(1)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+  firms       firms[]
+}
+
+model role_permissions {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  role_id       String      @db.Uuid
+  permission_id String      @db.Uuid
+  is_active     Boolean     @default(true)
+  metadata      Json        @default("{}")
+  row_version   BigInt      @default(1)
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime    @default(now()) @db.Timestamptz(6)
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([role_id, permission_id])
+}
+
+model roles {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code             String             @unique @db.VarChar(50)
+  name             String             @db.VarChar(255)
+  description      String?
+  is_active        Boolean            @default(true)
+  metadata         Json               @default("{}")
+  row_version      BigInt             @default(1)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  role_permissions role_permissions[]
+  user_firm_roles  user_firm_roles[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_firm_applications {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String       @db.Uuid
+  firm_id        String       @db.Uuid
+  application_id String       @db.Uuid
+  valid_from     DateTime?    @db.Date
+  valid_to       DateTime?    @db.Date
+  is_active      Boolean      @default(true)
+  metadata       Json         @default("{}")
+  row_version    BigInt       @default(1)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  applications   applications @relation(fields: [application_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  firms          firms        @relation(fields: [firm_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, firm_id, application_id], map: "user_firm_applications_user_firm_application_key")
+  @@index([application_id], map: "idx_user_firm_applications_application")
+  @@index([firm_id], map: "idx_user_firm_applications_firm")
+}
+
+model user_firm_roles {
+  id                         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                    String                       @db.Uuid
+  firm_id                    String                       @db.Uuid
+  role_id                    String                       @db.Uuid
+  valid_from                 DateTime?                    @db.Date
+  valid_to                   DateTime?                    @db.Date
+  is_active                  Boolean                      @default(true)
+  metadata                   Json                         @default("{}")
+  row_version                BigInt                       @default(1)
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  permission_resource_scopes permission_resource_scopes[]
+  firms                      firms                        @relation(fields: [firm_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roles                      roles                        @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                      users                        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, firm_id, role_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_permission_overrides {
+  id                         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                    String                       @db.Uuid
+  firm_id                    String?                      @db.Uuid
+  permission_id              String                       @db.Uuid
+  effect                     String                       @db.VarChar(10)
+  valid_from                 DateTime?                    @db.Date
+  valid_to                   DateTime?                    @db.Date
+  notes                      String?
+  metadata                   Json                         @default("{}")
+  row_version                BigInt                       @default(1)
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  permission_resource_scopes permission_resource_scopes[]
+  firms                      firms?                       @relation(fields: [firm_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  permissions                permissions                  @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                      users                        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                     String                      @unique @db.VarChar(255)
+  display_name              String?                     @db.VarChar(255)
+  is_active                 Boolean                     @default(true)
+  metadata                  Json                        @default("{}")
+  row_version               BigInt                      @default(1)
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  user_external_identities  user_external_identities[]
+  user_firm_applications    user_firm_applications[]
+  user_firm_roles           user_firm_roles[]
+  user_permission_overrides user_permission_overrides[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_external_identities {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String   @db.Uuid
+  issuer               String
+  subject              String
+  status               String   @default("active") @db.VarChar(20)
+  link_provenance      String   @db.VarChar(30)
+  linked_by            String?  @db.Uuid
+  linked_at            DateTime @default(now()) @db.Timestamptz(6)
+  status_changed_by    String?  @db.Uuid
+  status_changed_at    DateTime @default(now()) @db.Timestamptz(6)
+  status_change_reason String?
+  metadata             Json     @default("{}")
+  row_version          BigInt   @default(1)
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime @default(now()) @db.Timestamptz(6)
+  users                users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([issuer, subject])
+  @@index([user_id, status], map: "idx_user_external_identities_user_status")
+}

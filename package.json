@@ -17,7 +17,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:up": "docker compose -f infrastructure/compose/development.yml up -d",
-    "infra:down": "docker compose -f infrastructure/compose/development.yml down"
+    "infra:down": "docker compose -f infrastructure/compose/development.yml down",
+    "shared-core-db:up": "docker compose -f infrastructure/compose/shared-core-database-development.yml up -d",
+    "shared-core-db:down": "docker compose -f infrastructure/compose/shared-core-database-development.yml down"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
