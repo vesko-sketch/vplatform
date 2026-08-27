@@ -5,7 +5,7 @@ import { PrismaExternalIdentityRepository } from './prisma-external-identity.rep
 import { PrismaService } from './prisma.service.js';
 
 @Module({
-  exports: [IdentityResolutionService],
+  exports: [IdentityResolutionService, PrismaService],
   providers: [PrismaService, PrismaExternalIdentityRepository, IdentityResolutionService],
 })
 export class IdentityModule {}

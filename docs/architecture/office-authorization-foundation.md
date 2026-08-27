@@ -35,3 +35,22 @@ Shared Core will resolve base application/firm permissions. Office must separate
 Firm groups grant no authorization. Resource scopes and document lifecycle authorization remain deferred. `routing.for_posting` is an Office routing action and never grants Accounting `journal.post`.
 
 The complete reviewed permission and role mapping is encoded with deterministic UUIDs in the Office catalog migration. Permission display grouping is a UI concern and is not an authorization primitive.
+
+## Read-only authorization resolution
+
+Shared Core evaluates base authorization in this order: active platform user; exact active application; active firm; current active `firm_applications`; current active `user_firm_applications`; application-qualified active permission; current active role assignments and roles; active role-permission union; then current user overrides. Neither a role nor an override can bypass the firm/application gates.
+
+Permission lookup always uses `(application, code)`. For example, `OFFICE + documents.view` and `ACCOUNTING + documents.view` are distinct capabilities. Code-only lookup is invalid.
+
+All `DATE` validity fields use the inclusive rule `valid_from <= evaluatedDate <= valid_to`, with either null bound treated as open. The resolver derives `evaluatedDate` once from the supplied `evaluatedAt` instant using the platform business timezone `Europe/Sofia`. PostgreSQL `DATE` values are compared as calendar dates; the resolver does not mix UTC and local calendar dates or call the wall clock inside decision logic.
+
+Multiple current active roles are unordered. Their active permissions for the requested application are unioned and deduplicated by permission UUID. Global overrides are applied to that base result first, then firm-specific overrides replace the global result. At one specificity, deny wins; duplicate active allows, duplicate active denies, an allow/deny conflict, or an unknown effect fails closed and is retained as internal diagnostic context.
+
+An allowed Shared Core result has authorization level `base` and always requires application-domain policy before a resource operation. Shared Core does not claim to know Office document ownership, lifecycle, functional/category scope, or safe-field redaction. In particular:
+
+- `upload_only` document and archive capabilities require future `OWN_UPLOADED_DOCUMENTS` enforcement in Office; document mutation also requires lifecycle enforcement.
+- Payroll Office capabilities require future functional/category scope.
+- Client-owner processing, routing, integration, and automation views require safe/redacted Office representations.
+- Client-owner administration capability requires a second-stage policy that prevents internal-role assignment, cross-firm grants, and self-elevation.
+
+The `manager` role always means an internal manager of the accounting firm. Firm groups remain organizational/reporting structures and are not read by the authorization resolver. Adding a firm to a group grants nothing.
