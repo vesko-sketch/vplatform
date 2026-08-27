@@ -79,7 +79,7 @@ curl --fail \
   http://localhost:3001/auth/me
 ```
 
-An authenticated Keycloak identity without a persisted link receives HTTP 403 with `IDENTITY_NOT_LINKED`. A known active link to an active Shared Core user receives issuer, subject, audience, optional preferred username, `platformUserId`, and `identityLinkId`. Email, realm/client roles, firm access, and V Platform permissions are not returned or interpreted.
+An authenticated Keycloak identity without a persisted link receives HTTP 403 with `IDENTITY_NOT_LINKED`. A known active link to an active Shared Core user receives issuer, subject, audience, optional preferred username, `platformUserId`, and `identityLinkId`. Email and realm/client roles are not interpreted as V Platform authorization. The development-only explicit firm/application fixture and authorization-context checks are documented in [first-platform-user.md](first-platform-user.md).
 
 Also verify rejection:
 

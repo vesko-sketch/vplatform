@@ -8,7 +8,7 @@ import { createKeycloakTokenVerifier, TokenVerifier } from './token-verifier.js'
 
 @Module({
   controllers: [AuthController],
-  exports: [AuthenticationGuard],
+  exports: [AuthenticationGuard, TokenVerifier],
   imports: [IdentityModule],
   providers: [
     {

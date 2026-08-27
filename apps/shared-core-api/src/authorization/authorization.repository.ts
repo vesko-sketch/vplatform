@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../identity/prisma.service.js';
 import type {
@@ -97,11 +98,15 @@ export class AuthorizationRepository {
   }
 
   async findFirmApplication(firmId: string, applicationId: string): Promise<DatedRecord | null> {
-    const row = await this.prisma.firm_applications.findUnique({
-      select: { is_active: true, valid_from: true, valid_to: true },
-      where: { firm_id_application_id: { application_id: applicationId, firm_id: firmId } },
-    });
-    return row === null ? null : dated(row);
+    const rows = await this.prisma.$queryRaw<
+      Array<{ is_active: boolean; valid_from: Date | null; valid_to: Date | null }>
+    >(Prisma.sql`
+      SELECT is_active, valid_from, valid_to
+      FROM public.firm_applications
+      WHERE firm_id = ${firmId}::uuid AND application_id = ${applicationId}::uuid
+    `);
+    const row = rows[0];
+    return row === undefined ? null : dated(row);
   }
 
   async findUserApplication(
@@ -109,17 +114,17 @@ export class AuthorizationRepository {
     firmId: string,
     applicationId: string,
   ): Promise<DatedRecord | null> {
-    const row = await this.prisma.user_firm_applications.findUnique({
-      select: { is_active: true, valid_from: true, valid_to: true },
-      where: {
-        user_id_firm_id_application_id: {
-          application_id: applicationId,
-          firm_id: firmId,
-          user_id: userId,
-        },
-      },
-    });
-    return row === null ? null : dated(row);
+    const rows = await this.prisma.$queryRaw<
+      Array<{ is_active: boolean; valid_from: Date | null; valid_to: Date | null }>
+    >(Prisma.sql`
+      SELECT is_active, valid_from, valid_to
+      FROM public.user_firm_applications
+      WHERE user_id = ${userId}::uuid
+        AND firm_id = ${firmId}::uuid
+        AND application_id = ${applicationId}::uuid
+    `);
+    const row = rows[0];
+    return row === undefined ? null : dated(row);
   }
 
   async listApplicationPermissions(applicationId: string): Promise<PermissionRecord[]> {
@@ -169,21 +174,30 @@ export class AuthorizationRepository {
 
   async listRolePermissions(roleIds: string[]): Promise<RolePermissionRecord[]> {
     if (roleIds.length === 0) return [];
-    const rows = await this.prisma.role_permissions.findMany({
-      select: {
-        is_active: true,
-        permissions: { select: { application_id: true, code: true, id: true, is_active: true } },
-        role_id: true,
-      },
-      where: { role_id: { in: roleIds } },
-    });
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        application_id: string;
+        code: string;
+        permission_id: string;
+        permission_is_active: boolean;
+        role_id: string;
+        role_permission_is_active: boolean;
+      }>
+    >(Prisma.sql`
+      SELECT rp.role_id, rp.permission_id,
+             rp.is_active AS role_permission_is_active,
+             p.application_id, p.code, p.is_active AS permission_is_active
+      FROM public.role_permissions rp
+      JOIN public.permissions p ON p.id = rp.permission_id
+      WHERE rp.role_id IN (${Prisma.join(roleIds.map((roleId) => Prisma.sql`${roleId}::uuid`))})
+    `);
     return rows.map((row) => ({
-      isActive: row.is_active,
+      isActive: row.role_permission_is_active,
       permission: {
-        applicationId: row.permissions.application_id,
-        code: row.permissions.code,
-        id: row.permissions.id,
-        isActive: row.permissions.is_active,
+        applicationId: row.application_id,
+        code: row.code,
+        id: row.permission_id,
+        isActive: row.permission_is_active,
       },
       roleId: row.role_id,
     }));
@@ -220,24 +234,43 @@ export class AuthorizationRepository {
   }
 
   async listAccessCandidates(userId: string): Promise<AccessCandidate[]> {
-    const rows = await this.prisma.user_firm_applications.findMany({
-      select: {
-        applications: { select: applicationSelect },
-        firms: { select: firmSelect },
-        is_active: true,
-        valid_from: true,
-        valid_to: true,
-      },
-      where: { user_id: userId },
-    });
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        application_id: string;
+        firm_id: string;
+        is_active: boolean;
+        valid_from: Date | null;
+        valid_to: Date | null;
+      }>
+    >(Prisma.sql`
+      SELECT application_id, firm_id, is_active, valid_from, valid_to
+      FROM public.user_firm_applications
+      WHERE user_id = ${userId}::uuid
+    `);
+    const applicationIds = [...new Set(rows.map((row) => row.application_id))];
+    const firmIds = [...new Set(rows.map((row) => row.firm_id))];
+    const [applicationRows, firmRows] = await Promise.all([
+      this.prisma.applications.findMany({
+        select: applicationSelect,
+        where: { id: { in: applicationIds } },
+      }),
+      this.prisma.firms.findMany({ select: firmSelect, where: { id: { in: firmIds } } }),
+    ]);
+    const applications = new Map(applicationRows.map((row) => [row.id, application(row)]));
+    const firms = new Map(firmRows.map((row) => [row.id, firm(row)]));
 
-    return Promise.all(
-      rows.map(async (row) => ({
-        application: application(row.applications),
-        firm: firm(row.firms),
-        firmApplication: await this.findFirmApplication(row.firms.id, row.applications.id),
+    const candidates: AccessCandidate[] = [];
+    for (const row of rows) {
+      const mappedApplication = applications.get(row.application_id);
+      const mappedFirm = firms.get(row.firm_id);
+      if (mappedApplication === undefined || mappedFirm === undefined) continue;
+      candidates.push({
+        application: mappedApplication,
+        firm: mappedFirm,
+        firmApplication: await this.findFirmApplication(mappedFirm.id, mappedApplication.id),
         userApplication: dated(row),
-      })),
-    );
+      });
+    }
+    return candidates;
   }
 }
