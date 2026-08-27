@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { AuthorizationRepository } from './authorization.repository.js';
 import {
   type AccessCandidate,
+  type ApplicationAuthorizationDecisionInput,
   type ApplicationRecord,
   type AuthorizationDecision,
   type AuthorizationDecisionInput,
@@ -118,6 +119,7 @@ export class AuthorizationService {
         existsElsewhere ? 'permission_wrong_application' : 'permission_not_found',
       );
     }
+    if (permission.scopeType !== 'FIRM') return decision(false, 'permission_wrong_scope');
     return this.evaluatePermission(loaded.context, permission, input.firmId, date);
   }
 
@@ -132,7 +134,7 @@ export class AuthorizationService {
     if ('reason' in loaded) return { decision: decision(false, loaded.reason), permissions: [] };
 
     const decisions = loaded.context.permissions
-      .filter((permission) => permission.isActive)
+      .filter((permission) => permission.isActive && permission.scopeType === 'FIRM')
       .map((permission) => ({
         code: permission.code,
         result: this.evaluatePermission(loaded.context, permission, firmId, date),
@@ -220,6 +222,7 @@ export class AuthorizationService {
             activeRoleIds.has(item.roleId) &&
             item.isActive &&
             item.permission.isActive &&
+            item.permission.scopeType === 'FIRM' &&
             item.permission.applicationId === application.id,
         )
         .map((item) => item.permission.id),
@@ -239,6 +242,52 @@ export class AuthorizationService {
         rolePermissionIds,
       },
     };
+  }
+
+  async canAtApplicationScope(
+    input: ApplicationAuthorizationDecisionInput,
+  ): Promise<AuthorizationDecision> {
+    const date = businessDateAt(input.evaluatedAt);
+    const user = await this.repository.findUser(input.platformUserId);
+    if (user === null) return decision(false, 'unknown_identity');
+    if (!user.isActive) return decision(false, 'disabled_user');
+
+    const application = await this.repository.findApplication(input.applicationCode);
+    if (application === null) return decision(false, 'application_not_found');
+    if (!application.isActive) return decision(false, 'inactive_application');
+
+    const permissions = await this.repository.listApplicationPermissions(application.id);
+    const permission = permissions.find((item) => item.code === input.permissionCode);
+    if (permission === undefined) {
+      const existsElsewhere = await this.repository.permissionCodeExistsOutsideApplication(
+        input.permissionCode,
+        application.id,
+      );
+      return decision(
+        false,
+        existsElsewhere ? 'permission_wrong_application' : 'permission_not_found',
+      );
+    }
+    if (permission.scopeType !== 'APPLICATION') return decision(false, 'permission_wrong_scope');
+    if (!permission.isActive) return decision(false, 'inactive_permission');
+
+    const assignments = (
+      await this.repository.listApplicationRoleAssignments(input.platformUserId, application.id)
+    ).filter((item) => item.isActive && item.role.isActive && isCurrent(item, date));
+    const activeRoleIds = new Set(assignments.map((item) => item.role.id));
+    const rolePermissions = await this.repository.listRolePermissions([...activeRoleIds]);
+    const allowed = rolePermissions.some(
+      (item) =>
+        activeRoleIds.has(item.roleId) &&
+        item.isActive &&
+        item.permission.isActive &&
+        item.permission.applicationId === application.id &&
+        item.permission.scopeType === 'APPLICATION' &&
+        item.permission.id === permission.id,
+    );
+    return allowed
+      ? decision(true, 'allowed')
+      : decision(false, assignments.length === 0 ? 'no_active_role' : 'permission_not_granted');
   }
 
   private evaluatePermission(

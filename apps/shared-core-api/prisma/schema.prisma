@@ -21,6 +21,7 @@ model applications {
   updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
   firm_applications      firm_applications[]
   permissions            permissions[]
+  user_application_roles user_application_roles[]
   user_firm_applications user_firm_applications[]
 }
 
@@ -206,6 +207,7 @@ model permissions {
   created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
   updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
   application_id             String                       @db.Uuid
+  scope_type                String                       @db.VarChar(20)
   permission_resource_scopes permission_resource_scopes[]
   applications               applications                 @relation(fields: [application_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   role_permissions           role_permissions[]
@@ -303,7 +305,30 @@ model roles {
   created_at       DateTime           @default(now()) @db.Timestamptz(6)
   updated_at       DateTime           @default(now()) @db.Timestamptz(6)
   role_permissions role_permissions[]
+  user_application_roles user_application_roles[]
   user_firm_roles  user_firm_roles[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_application_roles {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String       @db.Uuid
+  application_id String       @db.Uuid
+  role_id        String       @db.Uuid
+  valid_from     DateTime?    @db.Date
+  valid_to       DateTime?    @db.Date
+  is_active      Boolean      @default(true)
+  metadata       Json         @default("{}")
+  row_version    BigInt       @default(1)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  applications   applications @relation(fields: [application_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roles          roles        @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, application_id, role_id], map: "user_application_roles_user_application_role_key")
+  @@index([user_id, application_id, is_active], map: "idx_user_application_roles_user_application_active")
+  @@index([role_id], map: "idx_user_application_roles_role")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -378,6 +403,7 @@ model users {
   created_at                DateTime                    @default(now()) @db.Timestamptz(6)
   updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
   user_external_identities  user_external_identities[]
+  user_application_roles    user_application_roles[]
   user_firm_applications    user_firm_applications[]
   user_firm_roles           user_firm_roles[]
   user_permission_overrides user_permission_overrides[]

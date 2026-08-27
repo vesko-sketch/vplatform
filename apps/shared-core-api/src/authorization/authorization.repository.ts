@@ -130,7 +130,7 @@ export class AuthorizationRepository {
   async listApplicationPermissions(applicationId: string): Promise<PermissionRecord[]> {
     const rows = await this.prisma.permissions.findMany({
       orderBy: { code: 'asc' },
-      select: { application_id: true, code: true, id: true, is_active: true },
+      select: { application_id: true, code: true, id: true, is_active: true, scope_type: true },
       where: { application_id: applicationId },
     });
     return rows.map((row) => ({
@@ -138,6 +138,7 @@ export class AuthorizationRepository {
       code: row.code,
       id: row.id,
       isActive: row.is_active,
+      scopeType: row.scope_type as 'APPLICATION' | 'FIRM',
     }));
   }
 
@@ -172,6 +173,29 @@ export class AuthorizationRepository {
     }));
   }
 
+  async listApplicationRoleAssignments(
+    userId: string,
+    applicationId: string,
+  ): Promise<RoleAssignmentRecord[]> {
+    const rows = await this.prisma.user_application_roles.findMany({
+      select: {
+        id: true,
+        is_active: true,
+        roles: { select: { code: true, id: true, is_active: true } },
+        valid_from: true,
+        valid_to: true,
+      },
+      where: { application_id: applicationId, user_id: userId },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      isActive: row.is_active,
+      role: { code: row.roles.code, id: row.roles.id, isActive: row.roles.is_active },
+      validFrom: row.valid_from,
+      validTo: row.valid_to,
+    }));
+  }
+
   async listRolePermissions(roleIds: string[]): Promise<RolePermissionRecord[]> {
     if (roleIds.length === 0) return [];
     const rows = await this.prisma.$queryRaw<
@@ -180,13 +204,14 @@ export class AuthorizationRepository {
         code: string;
         permission_id: string;
         permission_is_active: boolean;
+        scope_type: string;
         role_id: string;
         role_permission_is_active: boolean;
       }>
     >(Prisma.sql`
       SELECT rp.role_id, rp.permission_id,
              rp.is_active AS role_permission_is_active,
-             p.application_id, p.code, p.is_active AS permission_is_active
+             p.application_id, p.code, p.is_active AS permission_is_active, p.scope_type
       FROM public.role_permissions rp
       JOIN public.permissions p ON p.id = rp.permission_id
       WHERE rp.role_id IN (${Prisma.join(roleIds.map((roleId) => Prisma.sql`${roleId}::uuid`))})
@@ -198,6 +223,7 @@ export class AuthorizationRepository {
         code: row.code,
         id: row.permission_id,
         isActive: row.permission_is_active,
+        scopeType: row.scope_type as 'APPLICATION' | 'FIRM',
       },
       roleId: row.role_id,
     }));

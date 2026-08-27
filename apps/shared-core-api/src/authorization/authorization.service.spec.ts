@@ -40,6 +40,7 @@ const permission: PermissionRecord = {
   code: 'documents.view',
   id: '00000000-0000-4000-8000-000000000004',
   isActive: true,
+  scopeType: 'FIRM',
 };
 const current: DatedRecord = { isActive: true, validFrom: null, validTo: null };
 const assignment: RoleAssignmentRecord = {
@@ -69,6 +70,7 @@ function repository(): MockRepository {
     findUser: vi.fn().mockResolvedValue(user),
     findUserApplication: vi.fn().mockResolvedValue(current),
     listAccessCandidates: vi.fn().mockResolvedValue([]),
+    listApplicationRoleAssignments: vi.fn().mockResolvedValue([]),
     listApplicationPermissions: vi.fn().mockResolvedValue([permission]),
     listOverrides: vi.fn().mockResolvedValue([]),
     listRoleAssignments: vi.fn().mockResolvedValue([assignment]),
@@ -154,6 +156,112 @@ describe('AuthorizationService', () => {
 
     repo.listApplicationPermissions.mockResolvedValue([{ ...permission, isActive: false }]);
     await expect(can()).resolves.toMatchObject({ reason: 'inactive_permission' });
+  });
+
+  it('keeps application permissions out of firm-scoped decisions', async () => {
+    repo.listApplicationPermissions.mockResolvedValue([
+      { ...permission, code: 'firms.create', scopeType: 'APPLICATION' },
+    ]);
+    await expect(
+      service.can({
+        applicationCode: office.code,
+        evaluatedAt,
+        firmId: firm.id,
+        permissionCode: 'firms.create',
+        platformUserId: user.id,
+      }),
+    ).resolves.toMatchObject({ basePermissionGranted: false, reason: 'permission_wrong_scope' });
+  });
+
+  describe('application scope', () => {
+    const applicationPermission = {
+      ...permission,
+      code: 'firms.create',
+      scopeType: 'APPLICATION' as const,
+    };
+    const canAtApplicationScope = (): Promise<AuthorizationDecision> =>
+      service.canAtApplicationScope({
+        applicationCode: office.code,
+        evaluatedAt,
+        permissionCode: applicationPermission.code,
+        platformUserId: user.id,
+      });
+
+    beforeEach(() => {
+      repo.listApplicationPermissions.mockResolvedValue([applicationPermission]);
+      repo.listApplicationRoleAssignments.mockResolvedValue([assignment]);
+      repo.listRolePermissions.mockResolvedValue([
+        { ...rolePermission, permission: applicationPermission },
+      ]);
+    });
+
+    it.each([
+      ['unknown_identity', 'findUser', null],
+      ['disabled_user', 'findUser', { ...user, isActive: false }],
+      ['application_not_found', 'findApplication', null],
+      ['inactive_application', 'findApplication', { ...office, isActive: false }],
+    ] as const)('fails the application gate with %s', async (reason, method, value) => {
+      repo[method].mockResolvedValue(value);
+      await expect(canAtApplicationScope()).resolves.toMatchObject({ reason });
+    });
+
+    it('requires an application-qualified permission', async () => {
+      repo.listApplicationPermissions.mockResolvedValue([]);
+      repo.permissionCodeExistsOutsideApplication.mockResolvedValue(true);
+      await expect(canAtApplicationScope()).resolves.toMatchObject({
+        reason: 'permission_wrong_application',
+      });
+    });
+
+    it('allows an active current application role and does not consult firm access', async () => {
+      await expect(canAtApplicationScope()).resolves.toMatchObject({
+        basePermissionGranted: true,
+        reason: 'allowed',
+      });
+      expect(repo.findFirm).not.toHaveBeenCalled();
+      expect(repo.findFirmApplication).not.toHaveBeenCalled();
+      expect(repo.findUserApplication).not.toHaveBeenCalled();
+      expect(repo.listRoleAssignments).not.toHaveBeenCalled();
+      expect(repo.listOverrides).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [{ ...assignment, isActive: false }, 'no_active_role'],
+      [{ ...assignment, validFrom: new Date('2026-08-29T00:00:00Z') }, 'no_active_role'],
+      [{ ...assignment, validTo: new Date('2026-08-27T00:00:00Z') }, 'no_active_role'],
+      [{ ...assignment, role: { ...assignment.role, isActive: false } }, 'no_active_role'],
+    ] as const)('denies inactive or non-current application roles', async (value, reason) => {
+      repo.listApplicationRoleAssignments.mockResolvedValue([value]);
+      await expect(canAtApplicationScope()).resolves.toMatchObject({ reason });
+    });
+
+    it('denies firm permissions through the application resolver', async () => {
+      repo.listApplicationPermissions.mockResolvedValue([permission]);
+      await expect(
+        service.canAtApplicationScope({
+          applicationCode: office.code,
+          evaluatedAt,
+          permissionCode: permission.code,
+          platformUserId: user.id,
+        }),
+      ).resolves.toMatchObject({ reason: 'permission_wrong_scope' });
+    });
+
+    it('denies inactive permissions and inactive role mappings', async () => {
+      repo.listApplicationPermissions.mockResolvedValue([
+        { ...applicationPermission, isActive: false },
+      ]);
+      await expect(canAtApplicationScope()).resolves.toMatchObject({
+        reason: 'inactive_permission',
+      });
+      repo.listApplicationPermissions.mockResolvedValue([applicationPermission]);
+      repo.listRolePermissions.mockResolvedValue([
+        { ...rolePermission, isActive: false, permission: applicationPermission },
+      ]);
+      await expect(canAtApplicationScope()).resolves.toMatchObject({
+        reason: 'permission_not_granted',
+      });
+    });
   });
 
   it('unions active permissions from multiple unordered roles and deduplicates them', async () => {

@@ -19,6 +19,7 @@ export type AuthorizationReason =
   | 'permission_not_found'
   | 'inactive_permission'
   | 'permission_wrong_application'
+  | 'permission_wrong_scope'
   | 'no_active_role'
   | 'permission_not_granted'
   | 'explicit_deny'
@@ -80,6 +81,14 @@ export interface PermissionRecord {
   code: string;
   id: string;
   isActive: boolean;
+  scopeType: 'APPLICATION' | 'FIRM';
+}
+
+export interface ApplicationAuthorizationDecisionInput {
+  applicationCode: string;
+  evaluatedAt: Date;
+  permissionCode: string;
+  platformUserId: string;
 }
 
 export interface RoleAssignmentRecord extends DatedRecord {
