@@ -10,7 +10,7 @@ vi.mock('./session', () => ({
   validAccessToken: vi.fn().mockResolvedValue('server-only-token'),
 }));
 
-import { proxyOfficeJson } from './office-api';
+import { proxyOfficeJson, proxyOfficeRequest } from './office-api';
 
 describe('Office administration BFF transport', () => {
   beforeEach(() => vi.unstubAllGlobals());
@@ -22,6 +22,24 @@ describe('Office administration BFF transport', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       'http://office-api.internal:3002/office/me/applications/OFFICE/permissions',
       expect.objectContaining({ headers: { authorization: 'Bearer server-only-token' } }),
+    );
+    expect(await response.text()).not.toContain('server-only-token');
+  });
+
+  it('keeps the server token out of delegated command responses', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ id: 'firm-id' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await proxyOfficeRequest('/office/admin/firms', 'POST', '{"code":"TEST"}');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://office-api.internal:3002/office/admin/firms',
+      expect.objectContaining({
+        body: '{"code":"TEST"}',
+        headers: {
+          authorization: 'Bearer server-only-token',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+      }),
     );
     expect(await response.text()).not.toContain('server-only-token');
   });

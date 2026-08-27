@@ -19,11 +19,15 @@ interface FirmContext {
   firm: Firm;
   permissions: string[];
 }
+interface ApplicationPermissions {
+  permissions: string[];
+}
 
 export function OfficeShell(): ReactNode {
   const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null);
   const [context, setContext] = useState<FirmContext | null>(null);
   const [selectedFirmId, setSelectedFirmId] = useState('');
+  const [applicationPermissions, setApplicationPermissions] = useState<string[]>([]);
   const [status, setStatus] = useState<
     'loading' | 'authenticated' | 'unauthenticated' | 'unavailable'
   >('loading');
@@ -37,6 +41,17 @@ export function OfficeShell(): ReactNode {
       setSelectedFirmId(value.firms.length === 1 ? (value.firms[0]?.id ?? '') : '');
       setStatus('authenticated');
     });
+  }, []);
+
+  useEffect(() => {
+    void fetch('/api/office/application-permissions', { cache: 'no-store' }).then(
+      async (response) => {
+        if (response.ok)
+          setApplicationPermissions(
+            ((await response.json()) as ApplicationPermissions).permissions,
+          );
+      },
+    );
   }, []);
 
   useEffect(() => {
@@ -81,8 +96,10 @@ export function OfficeShell(): ReactNode {
     ['Documents', 'documents.view'],
     ['Review', 'review.view'],
     ['Archive', 'archive.view'],
-    ['Administration', 'users.view'],
   ].filter(([, permission]) => permission !== undefined && permissions.has(permission));
+  const showAdministration = applicationPermissions.some(
+    (permission) => permission.startsWith('firms.') || permission.startsWith('users.'),
+  );
 
   return (
     <main>
@@ -118,6 +135,7 @@ export function OfficeShell(): ReactNode {
             {navigation.map(([label]) => (
               <span key={label}>{label}</span>
             ))}
+            {showAdministration ? <a href="/administration/firms">Администрация</a> : null}
           </nav>
           <section>
             <h2>{context.firm.name}</h2>
