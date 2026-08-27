@@ -195,6 +195,41 @@ describe('AuthorizationService', () => {
       ]);
     });
 
+    it('enumerates only active APPLICATION permissions, deduplicated and sorted', async () => {
+      const second = {
+        ...applicationPermission,
+        code: 'firms.catalog.view',
+        id: '00000000-0000-4000-8000-000000000099',
+      };
+      repo.listRolePermissions.mockResolvedValue([
+        { ...rolePermission, permission: applicationPermission },
+        { ...rolePermission, permission: second },
+        { ...rolePermission, permission: second },
+        { ...rolePermission, permission },
+        {
+          ...rolePermission,
+          isActive: false,
+          permission: { ...applicationPermission, code: 'users.invite' },
+        },
+      ]);
+      await expect(
+        service.listEffectiveApplicationPermissions(user.id, office.code, evaluatedAt),
+      ).resolves.toEqual({
+        application: office,
+        permissions: ['firms.catalog.view', 'firms.create'],
+      });
+      expect(repo.findFirm).not.toHaveBeenCalled();
+      expect(repo.findUserApplication).not.toHaveBeenCalled();
+    });
+
+    it('returns an empty set without inferring authority from firm roles', async () => {
+      repo.listApplicationRoleAssignments.mockResolvedValue([]);
+      repo.listRolePermissions.mockResolvedValue([]);
+      await expect(
+        service.listEffectiveApplicationPermissions(user.id, office.code, evaluatedAt),
+      ).resolves.toEqual({ application: office, permissions: [] });
+    });
+
     it.each([
       ['unknown_identity', 'findUser', null],
       ['disabled_user', 'findUser', { ...user, isActive: false }],

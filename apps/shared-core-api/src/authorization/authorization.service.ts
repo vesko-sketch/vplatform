@@ -150,6 +150,39 @@ export class AuthorizationService {
     };
   }
 
+  async listEffectiveApplicationPermissions(
+    platformUserId: string,
+    applicationCode: string,
+    evaluatedAt: Date,
+  ): Promise<{ application: ApplicationRecord; permissions: string[] } | null> {
+    const user = await this.repository.findUser(platformUserId);
+    if (user === null || !user.isActive) return null;
+    const application = await this.repository.findApplication(applicationCode);
+    if (application === null || !application.isActive) return null;
+
+    const date = businessDateAt(evaluatedAt);
+    const assignments = (
+      await this.repository.listApplicationRoleAssignments(platformUserId, application.id)
+    ).filter((item) => item.isActive && item.role.isActive && isCurrent(item, date));
+    const roleIds = [...new Set(assignments.map((item) => item.role.id))];
+    const rolePermissions = await this.repository.listRolePermissions(roleIds);
+    const permissions = [
+      ...new Set(
+        rolePermissions
+          .filter(
+            (item) =>
+              roleIds.includes(item.roleId) &&
+              item.isActive &&
+              item.permission.isActive &&
+              item.permission.applicationId === application.id &&
+              item.permission.scopeType === 'APPLICATION',
+          )
+          .map((item) => item.permission.code),
+      ),
+    ].sort();
+    return { application, permissions };
+  }
+
   async listApplications(platformUserId: string, evaluatedAt: Date): Promise<ApplicationRecord[]> {
     const candidates = await this.validAccessCandidates(platformUserId, evaluatedAt);
     const unique = new Map(candidates.map((item) => [item.application.id, item.application]));

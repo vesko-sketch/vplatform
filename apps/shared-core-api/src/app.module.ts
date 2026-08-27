@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { AuthorizationModule } from './authorization/authorization.module.js';
 import { FirmAdminModule } from './firms/firm-admin.module.js';
 import { HealthController } from './health.controller.js';
+import { ReferenceDataModule } from './reference-data/reference-data.module.js';
 import { UserAdminModule } from './users/user-admin.module.js';
 
 @Module({
@@ -14,6 +15,7 @@ import { UserAdminModule } from './users/user-admin.module.js';
     AuthModule,
     AuthorizationModule,
     FirmAdminModule,
+    ReferenceDataModule,
     UserAdminModule,
   ],
 })

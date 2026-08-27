@@ -17,6 +17,7 @@ import { OfficeAuthenticationGuard } from '../auth/authentication.guard.js';
 import type { AuthenticatedOfficeRequest } from '../auth/auth.types.js';
 import {
   type AccessibleFirm,
+  type ApplicationPermissionContext,
   type FirmMaster,
   type PlatformIdentity,
   SharedCoreAuthorizationClient,
@@ -46,6 +47,24 @@ export class OfficeController {
   @ApiOperation({ summary: 'List firms accessible to the current Office user' })
   async firms(@Req() request: AuthenticatedOfficeRequest): Promise<AccessibleFirm[]> {
     return this.sharedCore.listFirms(token(request));
+  }
+
+  @Get('me/applications/:applicationCode/permissions')
+  applicationPermissions(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('applicationCode') applicationCode: string,
+  ): Promise<ApplicationPermissionContext> {
+    return this.sharedCore.getApplicationPermissions(token(request), applicationCode);
+  }
+
+  @Get('reference-data/:catalog')
+  referenceData(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('catalog') catalog: string,
+  ): Promise<unknown[]> {
+    if (!['countries', 'currencies', 'languages', 'legal-forms'].includes(catalog))
+      throw new BadRequestException('Unknown reference catalog');
+    return this.sharedCore.referenceData(catalog, token(request));
   }
 
   @Get('firms/:firmId/context')
@@ -283,6 +302,14 @@ export class OfficeController {
       `/${encodeURIComponent(userId)}/invitations`,
       token(request),
     );
+  }
+
+  @Get('admin/users/:userId/access')
+  userAccess(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<unknown> {
+    return this.sharedCore.userAdminRead(`/${encodeURIComponent(userId)}/access`, token(request));
   }
 
   @Post('admin/users/invitations')

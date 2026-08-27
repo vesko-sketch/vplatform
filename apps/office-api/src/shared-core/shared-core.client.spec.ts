@@ -88,4 +88,21 @@ describe('HttpSharedCoreAuthorizationClient', () => {
       }),
     );
   });
+
+  it('delegates application permissions, reference data, and user access with only the token', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(Response.json([])));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new HttpSharedCoreAuthorizationClient();
+    await client.getApplicationPermissions('token', 'OFFICE');
+    await client.referenceData('countries', 'token');
+    await client.userAdminRead('/user-id/access', 'token');
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls).toEqual([
+      'http://shared-core.internal:3001/me/applications/OFFICE/permissions',
+      'http://shared-core.internal:3001/reference-data/countries',
+      'http://shared-core.internal:3001/users/user-id/access',
+    ]);
+    for (const [, options] of fetchMock.mock.calls)
+      expect(options).toMatchObject({ headers: { authorization: 'Bearer token' } });
+  });
 });

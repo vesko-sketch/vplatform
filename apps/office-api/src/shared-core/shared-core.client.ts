@@ -36,6 +36,12 @@ export interface BasePermissionContext {
   requiresDomainPolicy: true;
 }
 
+export interface ApplicationPermissionContext {
+  application: AccessibleApplication;
+  authorizationLevel: 'application';
+  permissions: string[];
+}
+
 export interface FirmMaster {
   baseCurrencyId: string;
   code: string;
@@ -64,6 +70,10 @@ export abstract class SharedCoreAuthorizationClient {
   abstract listFirms(token: string): Promise<AccessibleFirm[]>;
   abstract listFirmApplications(token: string, firmId: string): Promise<AccessibleApplication[]>;
   abstract getOfficePermissions(token: string, firmId: string): Promise<BasePermissionContext>;
+  abstract getApplicationPermissions(
+    token: string,
+    applicationCode: string,
+  ): Promise<ApplicationPermissionContext>;
   abstract canOfficePermission(
     token: string,
     firmId: string,
@@ -81,6 +91,7 @@ export abstract class SharedCoreAuthorizationClient {
   abstract provisioningRead(path: string, token: string): Promise<unknown[]>;
   abstract provisioningCommand(path: string, token: string, body: unknown): Promise<unknown>;
   abstract userAdminRead(path: string, token: string): Promise<unknown>;
+  abstract referenceData(catalog: string, token: string): Promise<unknown[]>;
   abstract userAdminCommand(path: string, token: string, body?: unknown): Promise<unknown>;
   abstract redeemInvitation(token: string, body: unknown): Promise<unknown>;
 }
@@ -107,6 +118,13 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
       `/me/firms/${encodeURIComponent(firmId)}/applications/OFFICE/permissions`,
       token,
     );
+  }
+
+  async getApplicationPermissions(
+    token: string,
+    applicationCode: string,
+  ): Promise<ApplicationPermissionContext> {
+    return this.get(`/me/applications/${encodeURIComponent(applicationCode)}/permissions`, token);
   }
 
   async canOfficePermission(
@@ -146,6 +164,9 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
   }
   async userAdminRead(path: string, token: string): Promise<unknown> {
     return this.request(`/users${path}`, token);
+  }
+  async referenceData(catalog: string, token: string): Promise<unknown[]> {
+    return this.request(`/reference-data/${encodeURIComponent(catalog)}`, token);
   }
   async userAdminCommand(path: string, token: string, body?: unknown): Promise<unknown> {
     return this.request(`/users${path}`, token, 'POST', body ?? {});

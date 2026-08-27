@@ -48,6 +48,33 @@ export interface InvitationResult {
   user: UserAdminView;
 }
 
+export interface UserAccessView {
+  applicationRoles: Array<{
+    applicationCode: string;
+    isActive: true;
+    roleCode: string;
+    validFrom: Date | null;
+    validTo: Date | null;
+  }>;
+  firms: Array<{
+    applications: Array<{
+      accessActive: true;
+      applicationCode: string;
+      validFrom: Date | null;
+      validTo: Date | null;
+    }>;
+    firm: { code: string; id: string; name: string };
+    roles: Array<{
+      isActive: true;
+      roleCode: string;
+      roleName: string;
+      validFrom: Date | null;
+      validTo: Date | null;
+    }>;
+  }>;
+  userId: string;
+}
+
 export function publicUser(value: UserAdminView): Record<string, unknown> {
   return { ...value, rowVersion: value.rowVersion.toString() };
 }

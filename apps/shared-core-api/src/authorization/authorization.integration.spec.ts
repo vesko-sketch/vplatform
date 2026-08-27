@@ -201,6 +201,12 @@ describe.skipIf(!enabled)('AuthorizationService disposable PostgreSQL integratio
           platformUserId: ids.user,
         }),
       ).resolves.toMatchObject({ basePermissionGranted: true, reason: 'allowed' });
+      const context = await service.listEffectiveApplicationPermissions(ids.user, 'OFFICE', at);
+      expect(context?.permissions).toContain('firms.create');
+      expect(context?.permissions).toContain('firms.applications.view');
+      expect(context?.permissions).toContain('users.catalog.view');
+      expect(context?.permissions).not.toContain('documents.view');
+      expect(context?.permissions).not.toContain('firms.edit');
       await expect(
         service.canAtApplicationScope({
           applicationCode: 'OFFICE',

@@ -25,6 +25,12 @@ interface PermissionContextResponse {
   requiresDomainPolicy: true;
 }
 
+interface ApplicationPermissionContextResponse {
+  application: ApplicationResponse;
+  authorizationLevel: 'application';
+  permissions: string[];
+}
+
 interface PublicDecisionResponse {
   allowed: boolean;
   authorizationLevel: 'base';
@@ -74,6 +80,28 @@ export class AuthorizationController {
         name,
       }),
     );
+  }
+
+  @Get('applications/:applicationCode/permissions')
+  @ApiOperation({ summary: 'List effective application-scoped permissions' })
+  async applicationPermissions(
+    @Req() request: AuthenticatedRequest,
+    @Param('applicationCode') applicationCode: string,
+  ): Promise<ApplicationPermissionContextResponse> {
+    const userId = await platformUserId(request, this.identities);
+    const result = await this.authorization.listEffectiveApplicationPermissions(
+      userId,
+      applicationCode,
+      this.clock.now(),
+    );
+    return {
+      application: {
+        code: result?.application.code ?? applicationCode,
+        name: result?.application.name ?? applicationCode,
+      },
+      authorizationLevel: 'application',
+      permissions: result?.permissions ?? [],
+    };
   }
 
   @Get('firms')

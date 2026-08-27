@@ -6,7 +6,12 @@ import { AuthenticationGuard } from '../auth/authentication.guard.js';
 import type { AuthenticatedRequest } from '../auth/auth.types.js';
 import { IdentityResolutionService } from '../identity/identity-resolution.service.js';
 import { UserAdminService } from './user-admin.service.js';
-import { publicInvitation, publicUser, type UserAdminContext } from './user.types.js';
+import {
+  publicInvitation,
+  publicUser,
+  type UserAccessView,
+  type UserAdminContext,
+} from './user.types.js';
 import { createInvitation, redemptionToken, versionedReason } from './user.validation.js';
 
 function uuid(value: unknown): string {
@@ -55,6 +60,13 @@ export class UserAdminController {
     return (await this.users.invitations(context.actorUserId, userId, context.evaluatedAt)).map(
       publicInvitation,
     );
+  }
+  @Get('users/:userId/access') async access(
+    @Req() request: AuthenticatedRequest,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<UserAccessView> {
+    const context = await this.context(request);
+    return this.users.access(context.actorUserId, userId, context.evaluatedAt);
   }
   @Post('users/invitations') async create(
     @Req() request: AuthenticatedRequest,

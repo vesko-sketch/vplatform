@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import type { AuthenticationClaims } from '../auth/auth.types.js';
-import { AuthorizationService } from '../authorization/authorization.service.js';
+import { AuthorizationService, businessDateAt } from '../authorization/authorization.service.js';
 import { UserReadRepository } from './user-read.repository.js';
 import type {
   CreateInvitationCommand,
@@ -14,6 +14,7 @@ import type {
   InvitationView,
   UserAdminContext,
   UserAdminView,
+  UserAccessView,
   VersionedReasonCommand,
 } from './user.types.js';
 import { UserWriterService } from './user-writer.service.js';
@@ -53,6 +54,12 @@ export class UserAdminService {
   async invitations(actor: string, id: string, at: Date): Promise<InvitationView[]> {
     await this.allowed(actor, 'users.invitations.view', at);
     return this.reads.invitations(id);
+  }
+  async access(actor: string, id: string, at: Date): Promise<UserAccessView> {
+    await this.allowed(actor, 'users.catalog.view', at);
+    const value = await this.reads.access(id, businessDateAt(at));
+    if (!value) throw new NotFoundException('User not found');
+    return value;
   }
   async create(
     command: CreateInvitationCommand,
