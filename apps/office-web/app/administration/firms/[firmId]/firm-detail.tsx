@@ -289,7 +289,6 @@ export function FirmDetail({ firmId }: { firmId: string }): ReactNode {
             <h2>Достъп до OFFICE</h2>
             <p>Трите слоя се управляват отделно.</p>
           </div>
-          <span className="status neutral">Без Accounting</span>
         </div>
         <ol className="steps">
           <li>

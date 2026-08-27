@@ -38,7 +38,7 @@ printf 'Verifier: %s\nChallenge: %s\n' "$VERIFIER" "$CHALLENGE"
 Open this URL after substituting the generated challenge:
 
 ```text
-http://localhost:8080/realms/vplatform/protocol/openid-connect/auth?client_id=office-web&response_type=code&scope=openid&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fcallback&code_challenge=CHALLENGE&code_challenge_method=S256&state=manual-smoke-test
+http://localhost:8080/realms/vplatform/protocol/openid-connect/auth?client_id=office-web&response_type=code&scope=openid&redirect_uri=http%3A%2F%2Flocalhost%3A3100%2Fauth%2Fcallback&code_challenge=CHALLENGE&code_challenge_method=S256&state=manual-smoke-test
 ```
 
 After login, copy the `code` query parameter from the browser address bar. The callback page does not need to exist for this manual test.
@@ -51,7 +51,7 @@ TOKEN_RESPONSE=$(curl --fail --request POST \
   --header 'content-type: application/x-www-form-urlencoded' \
   --data-urlencode grant_type=authorization_code \
   --data-urlencode client_id=office-web \
-  --data-urlencode redirect_uri=http://localhost:3000/auth/callback \
+  --data-urlencode redirect_uri=http://localhost:3100/auth/callback \
   --data-urlencode code=PASTE_CODE_HERE \
   --data-urlencode code_verifier="$VERIFIER")
 ACCESS_TOKEN=$(printf %s "$TOKEN_RESPONSE" | jq --raw-output .access_token)
@@ -76,7 +76,7 @@ In another shell:
 ```bash
 curl --fail \
   --header "Authorization: Bearer $ACCESS_TOKEN" \
-  http://localhost:3001/auth/me
+  http://localhost:3102/auth/me
 ```
 
 An authenticated Keycloak identity without a persisted link receives HTTP 403 with `IDENTITY_NOT_LINKED`. A known active link to an active Shared Core user receives issuer, subject, audience, optional preferred username, `platformUserId`, and `identityLinkId`. Email and realm/client roles are not interpreted as V Platform authorization. The development-only explicit firm/application fixture and authorization-context checks are documented in [first-platform-user.md](first-platform-user.md).
@@ -84,8 +84,8 @@ An authenticated Keycloak identity without a persisted link receives HTTP 403 wi
 Also verify rejection:
 
 ```bash
-curl --include http://localhost:3001/auth/me
-curl --include --header 'Authorization: Bearer malformed' http://localhost:3001/auth/me
+curl --include http://localhost:3102/auth/me
+curl --include --header 'Authorization: Bearer malformed' http://localhost:3102/auth/me
 ```
 
 Both requests must return HTTP 401.

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpSharedCoreAuthorizationClient } from './shared-core.client.js';
 
 const environment = {
-  OFFICE_WEB_ORIGIN: 'http://localhost:3000',
+  OFFICE_WEB_ORIGIN: 'http://localhost:3100',
   OIDC_ISSUER_URL: 'http://localhost:8080/realms/vplatform',
   OIDC_OFFICE_API_AUDIENCE: 'office-api',
   OIDC_OFFICE_API_CLIENT_ID: 'office-api',

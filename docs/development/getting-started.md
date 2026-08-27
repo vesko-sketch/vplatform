@@ -12,7 +12,7 @@ Install workspace dependencies:
 pnpm install
 ```
 
-Copy `.env.example` to a local `.env` only when runtime configuration is needed. Change the development Keycloak administrator password before starting the stack. Never commit `.env` or real credentials. Phase 2A applications do not connect to PostgreSQL.
+Keep the approved Shared Core runtime URLs in the Git-ignored `.env.shared-core.local` file with mode `0600`. Never commit this file or copy its values into `.env.example`. Change the development Keycloak administrator password before starting the stack.
 
 ## Start supporting infrastructure
 
@@ -53,11 +53,24 @@ Never substitute a live URL into `prisma db push` or `prisma migrate dev`; those
 
 ## Run and verify the workspace
 
-Start all application development processes:
+Verify that ports `3100`, `3101`, and `3102` are free, then start the V Office application stack:
 
 ```bash
-pnpm dev
+pnpm dev:apps
 ```
+
+The command builds the two Nest APIs, then the launcher fails closed on a port conflict, reads
+Shared Core credentials only into `shared-core-api`, and starts the compiled APIs alongside the
+Next.js development server:
+
+- V Office: `http://localhost:3100`
+- Office API: `http://localhost:3101`
+- Shared Core API: `http://localhost:3102`
+- Keycloak: `http://localhost:8080`
+
+For normal use, open only [http://localhost:3100](http://localhost:3100) and sign in through
+Keycloak. `pnpm dev` is an alias for this same application-only startup. The legacy
+all-workspace command remains available as `pnpm dev:all` for deliberate use.
 
 Run the verification pipeline:
 

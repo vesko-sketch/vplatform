@@ -8,7 +8,9 @@
     "pnpm": ">=11.24.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @vplatform/identity-config build && pnpm --parallel --stream -r dev",
+    "dev": "pnpm dev:apps",
+    "dev:apps": "pnpm --filter @vplatform/identity-config build && pnpm --filter @vplatform/oidc-auth build && pnpm --filter @vplatform/shared-core-api build && pnpm --filter @vplatform/office-api build && node scripts/dev/start-platform-apps.mjs",
+    "dev:all": "pnpm --filter @vplatform/identity-config build && pnpm --parallel --stream -r dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm test:realm && pnpm -r test",

@@ -17,7 +17,7 @@ async function bootstrap(): Promise<void> {
     .build();
 
   SwaggerModule.setup('openapi', app, SwaggerModule.createDocument(app, openApiConfig));
-  await app.listen(Number(process.env.SHARED_CORE_API_PORT ?? 3001));
+  await app.listen(Number(process.env.SHARED_CORE_API_PORT ?? 3102));
 }
 
 void bootstrap();

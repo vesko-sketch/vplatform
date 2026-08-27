@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Inject,
   Injectable,
   SetMetadata,
 } from '@nestjs/common';
@@ -18,7 +19,8 @@ export const RequireOfficePermission = (permission: string): MethodDecorator =>
 @Injectable()
 export class OfficePermissionGuard implements CanActivate {
   constructor(
-    private readonly reflector: Reflector,
+    @Inject(Reflector) private readonly reflector: Reflector,
+    @Inject(SharedCoreAuthorizationClient)
     private readonly sharedCore: SharedCoreAuthorizationClient,
   ) {}
 

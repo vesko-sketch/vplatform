@@ -165,7 +165,7 @@ export class UserWriterService {
     )
       return undefined;
     const base =
-      process.env.INVITATION_REDEMPTION_BASE_URL ?? 'http://localhost:3000/invitations/redeem';
+      process.env.INVITATION_REDEMPTION_BASE_URL ?? 'http://localhost:3100/invitations/redeem';
     return `${base}?token=${encodeURIComponent(token)}`;
   }
   async create(

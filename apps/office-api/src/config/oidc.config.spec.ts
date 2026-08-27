@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { loadOfficeApiConfig } from './oidc.config.js';
 
 const environment = {
-  OFFICE_WEB_ORIGIN: 'http://localhost:3000',
+  OFFICE_WEB_ORIGIN: 'http://localhost:3100',
   OIDC_ISSUER_URL: 'http://localhost:8080/realms/vplatform',
   OIDC_OFFICE_API_AUDIENCE: 'office-api',
   OIDC_OFFICE_API_CLIENT_ID: 'office-api',
-  SHARED_CORE_API_URL: 'http://localhost:3001',
+  SHARED_CORE_API_URL: 'http://localhost:3102',
 };
 
 describe('loadOfficeApiConfig', () => {
@@ -16,8 +16,8 @@ describe('loadOfficeApiConfig', () => {
       audience: 'office-api',
       clockToleranceSeconds: 5,
       issuerUrl: 'http://localhost:8080/realms/vplatform',
-      officeWebOrigin: 'http://localhost:3000',
-      sharedCoreApiUrl: 'http://localhost:3001',
+      officeWebOrigin: 'http://localhost:3100',
+      sharedCoreApiUrl: 'http://localhost:3102',
       signingAlgorithm: 'RS256',
     });
   });

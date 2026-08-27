@@ -4,6 +4,7 @@ import {
   Body,
   ForbiddenException,
   Get,
+  Inject,
   Patch,
   Param,
   ParseUUIDPipe,
@@ -36,7 +37,10 @@ function token(request: AuthenticatedOfficeRequest): string {
 @UseGuards(OfficeAuthenticationGuard)
 @Controller('office')
 export class OfficeController {
-  constructor(private readonly sharedCore: SharedCoreAuthorizationClient) {}
+  constructor(
+    @Inject(SharedCoreAuthorizationClient)
+    private readonly sharedCore: SharedCoreAuthorizationClient,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Resolve the current Office platform identity' })

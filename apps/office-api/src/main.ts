@@ -18,7 +18,7 @@ async function bootstrap(): Promise<void> {
     .build();
 
   SwaggerModule.setup('openapi', app, SwaggerModule.createDocument(app, openApiConfig));
-  await app.listen(Number(process.env.OFFICE_API_PORT ?? 3002));
+  await app.listen(Number(process.env.OFFICE_API_PORT ?? 3101));
 }
 
 void bootstrap();

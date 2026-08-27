@@ -50,6 +50,11 @@ test('web access tokens contain only their intended audiences', () => {
 });
 
 test('development redirect origins are explicit and do not overlap zones', () => {
-  assert.deepEqual(clients.get('office-web').webOrigins, ['http://localhost:3000']);
-  assert.deepEqual(clients.get('accounting-web').webOrigins, ['http://localhost:3100']);
+  assert.deepEqual(clients.get('office-web').webOrigins, ['http://localhost:3100']);
+  assert.deepEqual(clients.get('office-web').redirectUris, ['http://localhost:3100/auth/callback']);
+  assert.equal(
+    clients.get('office-web').attributes['post.logout.redirect.uris'],
+    'http://localhost:3100',
+  );
+  assert.deepEqual(clients.get('accounting-web').webOrigins, ['http://localhost:3200']);
 });
