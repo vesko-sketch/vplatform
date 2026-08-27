@@ -6,6 +6,8 @@ The `00000000000000_legacy_baseline` migration is a normalized copy of the verif
 
 The `20260826140000_add_user_external_identities` migration was applied to live `shared_core` under the Phase 2B.2B-2 approval after a verified backup and zero-drift comparison. New migrations still require separate review and approval.
 
+The `20260826162000_add_permission_application` migration was applied live under Phase 2C.1C. The later `20260827120000_application_qualified_permissions_and_office_catalog` migration replaces global permission-code uniqueness with `(application_id, code)` and adds the reviewed Office catalog/default role mappings. It has passed disposable PostgreSQL 16 verification but is not approved for live execution.
+
 Never run `prisma db push` or `prisma migrate dev` against an existing Shared Core database. Runtime application credentials must not own DDL privileges.
 
 `SHARED_CORE_DATABASE_URL` is the API's least-privilege runtime URL. Migration operations must receive the owner URL separately as `SHARED_CORE_MIGRATION_DATABASE_URL`; operators must explicitly map that value to Prisma's datasource variable for the duration of an approved migration command. Never expose the owner URL to the running API.
