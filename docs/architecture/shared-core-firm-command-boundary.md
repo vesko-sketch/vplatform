@@ -30,7 +30,7 @@ Commands use explicit DTOs and reject unknown properties:
 - `UpdateFirmProfile { expectedRowVersion, name?, shortName?, defaultLanguageId?, timezone? }`
 - `UpdateFirmIdentity { expectedRowVersion, code?, legalFormId?, countryId?, registrationNumber? }`
 - `UpdateFirmSettings { expectedRowVersion, baseCurrencyId? }`
-- `ActivateFirm { expectedRowVersion, reason }`
+- `ActivateFirm { expectedRowVersion, reason }` uses application-scoped `firms.activate`; it may target an inactive catalog firm without granting firm-domain access.
 - `DeactivateFirm { expectedRowVersion, reason }`
 
 Create defaults to active but creates no `firm_applications`, user access, role assignment, override, or scope. OFFICE enablement is a separate, explicitly authorized command. A future guided UI may execute both reviewed commands, but a failed second command must remain visible and retryable rather than being hidden as implicit provisioning.
@@ -109,7 +109,7 @@ No INSERT/UPDATE is granted on authorization tables or references. No DELETE, TR
 
 ## Read APIs and UX
 
-`GET /me/firms` remains the user's accessible-firm selector. The first safe administration API is `GET /firms/:firmId`, guarded by current OFFICE firm access plus `firms.view`. `PATCH /firms/:firmId/profile`, `PATCH /firms/:firmId/identity`, `PATCH /firms/:firmId/settings`, `POST /firms/:firmId/activate`, and `POST /firms/:firmId/deactivate` map one-to-one to commands and require `expectedRowVersion`.
+`GET /me/firms` remains the user's accessible-firm selector. The administration catalog is separately guarded by application-scoped `firms.catalog.view`. Profile, identity, settings, and deactivation commands retain normal OFFICE firm access gates. `POST /firms/:firmId/activate` is the deliberate exception: it uses application-scoped `firms.activate` because the target is inactive, while still granting no ordinary access to that firm. Every existing-firm mutation requires `expectedRowVersion`.
 
 An administration-wide `GET /firms` and `POST /firms` remain design-blocked pending platform/operator scope. They must never be implemented by treating access to one client firm as authority over every firm.
 

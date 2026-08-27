@@ -176,6 +176,14 @@ describe.skipIf(!enabled)('AuthorizationService disposable PostgreSQL integratio
         platformUserId: ids.user,
       }),
     ).resolves.toMatchObject({ basePermissionGranted: false, reason: 'no_active_role' });
+    await expect(
+      service.canAtApplicationScope({
+        applicationCode: 'OFFICE',
+        evaluatedAt: at,
+        permissionCode: 'firms.activate',
+        platformUserId: ids.user,
+      }),
+    ).resolves.toMatchObject({ basePermissionGranted: false, reason: 'no_active_role' });
 
     const applicationRole = await prisma.user_application_roles.create({
       data: { application_id: officeId, role_id: managerRoleId, user_id: ids.user },
@@ -193,6 +201,14 @@ describe.skipIf(!enabled)('AuthorizationService disposable PostgreSQL integratio
         service.canAtApplicationScope({
           applicationCode: 'OFFICE',
           evaluatedAt: at,
+          permissionCode: 'firms.activate',
+          platformUserId: ids.user,
+        }),
+      ).resolves.toMatchObject({ basePermissionGranted: true, reason: 'allowed' });
+      await expect(
+        service.canAtApplicationScope({
+          applicationCode: 'OFFICE',
+          evaluatedAt: at,
           permissionCode: 'documents.view',
           platformUserId: ids.user,
         }),
@@ -202,7 +218,7 @@ describe.skipIf(!enabled)('AuthorizationService disposable PostgreSQL integratio
           applicationCode: 'OFFICE',
           evaluatedAt: at,
           firmId: ids.firmA,
-          permissionCode: 'firms.create',
+          permissionCode: 'firms.activate',
           platformUserId: ids.user,
         }),
       ).resolves.toMatchObject({ basePermissionGranted: false, reason: 'permission_wrong_scope' });
@@ -221,6 +237,14 @@ describe.skipIf(!enabled)('AuthorizationService disposable PostgreSQL integratio
           applicationCode: 'OFFICE',
           evaluatedAt: at,
           permissionCode: 'firms.create',
+          platformUserId: ids.user,
+        }),
+      ).resolves.toMatchObject({ basePermissionGranted: false, reason: 'permission_not_granted' });
+      await expect(
+        service.canAtApplicationScope({
+          applicationCode: 'OFFICE',
+          evaluatedAt: at,
+          permissionCode: 'firms.activate',
           platformUserId: ids.user,
         }),
       ).resolves.toMatchObject({ basePermissionGranted: false, reason: 'permission_not_granted' });
@@ -278,6 +302,14 @@ describe.skipIf(!enabled)('AuthorizationService disposable PostgreSQL integratio
           applicationCode: 'OFFICE',
           evaluatedAt: at,
           permissionCode: 'firms.create',
+          platformUserId: ids.user,
+        }),
+      ).resolves.toMatchObject({ basePermissionGranted: true, reason: 'allowed' });
+      await expect(
+        service.canAtApplicationScope({
+          applicationCode: 'OFFICE',
+          evaluatedAt: at,
+          permissionCode: 'firms.activate',
           platformUserId: ids.user,
         }),
       ).resolves.toMatchObject({ basePermissionGranted: true, reason: 'allowed' });

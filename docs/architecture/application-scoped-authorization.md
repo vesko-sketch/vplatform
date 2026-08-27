@@ -26,7 +26,7 @@ The administration codes requiring explicit interpretation remain `FIRM`:
 
 This preserves the least-authority meaning already established for firm administration. Any future global catalog editor requires new APPLICATION-scoped permissions rather than reinterpreting these codes.
 
-Five new Office permissions are added: `firms.create` and `firms.catalog.view` at APPLICATION scope; `firms.activate`, `firms.disable`, and `firms.identity.edit` at FIRM scope.
+Five new Office permissions are added. `firms.create`, `firms.catalog.view`, and `firms.activate` are APPLICATION scoped; `firms.disable` and `firms.identity.edit` are FIRM scoped. Reactivation is application administration because an inactive firm cannot pass the normal firm gate. It does not grant ordinary access to the reactivated firm.
 
 ## Resolution
 

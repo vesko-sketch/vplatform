@@ -225,6 +225,29 @@ describe('AuthorizationService', () => {
       expect(repo.listOverrides).not.toHaveBeenCalled();
     });
 
+    it('authorizes firms.activate at application scope without resolving a target firm', async () => {
+      const activatePermission = {
+        ...applicationPermission,
+        code: 'firms.activate',
+      };
+      repo.listApplicationPermissions.mockResolvedValue([activatePermission]);
+      repo.listRolePermissions.mockResolvedValue([
+        { ...rolePermission, permission: activatePermission },
+      ]);
+
+      await expect(
+        service.canAtApplicationScope({
+          applicationCode: office.code,
+          evaluatedAt,
+          permissionCode: 'firms.activate',
+          platformUserId: user.id,
+        }),
+      ).resolves.toMatchObject({ basePermissionGranted: true, reason: 'allowed' });
+      expect(repo.findFirm).not.toHaveBeenCalled();
+      expect(repo.findFirmApplication).not.toHaveBeenCalled();
+      expect(repo.findUserApplication).not.toHaveBeenCalled();
+    });
+
     it.each([
       [{ ...assignment, isActive: false }, 'no_active_role'],
       [{ ...assignment, validFrom: new Date('2026-08-29T00:00:00Z') }, 'no_active_role'],
