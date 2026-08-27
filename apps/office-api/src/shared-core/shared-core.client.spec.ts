@@ -49,4 +49,18 @@ describe('HttpSharedCoreAuthorizationClient', () => {
       ServiceUnavailableException,
     );
   });
+
+  it('forwards firm commands with only the validated bearer token and body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ id: 'firm-id' }));
+    vi.stubGlobal('fetch', fetchMock);
+    await new HttpSharedCoreAuthorizationClient().createFirm('validated-token', { code: 'TEST' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://shared-core.internal:3001/firms',
+      expect.objectContaining({
+        body: '{"code":"TEST"}',
+        headers: { authorization: 'Bearer validated-token', 'content-type': 'application/json' },
+        method: 'POST',
+      }),
+    );
+  });
 });

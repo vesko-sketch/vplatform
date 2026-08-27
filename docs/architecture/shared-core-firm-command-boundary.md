@@ -111,7 +111,7 @@ No INSERT/UPDATE is granted on authorization tables or references. No DELETE, TR
 
 `GET /me/firms` remains the user's accessible-firm selector. The administration catalog is separately guarded by application-scoped `firms.catalog.view`. Profile, identity, settings, and deactivation commands retain normal OFFICE firm access gates. `POST /firms/:firmId/activate` is the deliberate exception: it uses application-scoped `firms.activate` because the target is inactive, while still granting no ordinary access to that firm. Every existing-firm mutation requires `expectedRowVersion`.
 
-An administration-wide `GET /firms` and `POST /firms` remain design-blocked pending platform/operator scope. They must never be implemented by treating access to one client firm as authority over every firm.
+Application-scoped `firms.catalog.view` guards `GET /firms` and `GET /firms/:id`; application-scoped `firms.create` guards `POST /firms`. These operations never derive catalog authority from access to one client firm and never provision firm/application/user access implicitly.
 
 The Office Web flow keeps the ordinary firm selector separate from an Administration area: authorized catalog -> create wizard -> firm profile -> explicit edit -> explicit status action. Reference dropdowns call read-only Shared Core endpoints for active legal forms, countries, currencies, and languages; Office does not copy these catalogs. Creation, OFFICE enablement, and access assignment are visibly separate steps.
 

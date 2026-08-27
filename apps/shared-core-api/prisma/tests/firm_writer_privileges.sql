@@ -20,7 +20,7 @@ GRANT SELECT (id, user_id, firm_id, role_id, is_active, valid_from, valid_to)
 GRANT SELECT (id, code, is_active) ON public.roles TO phase3a1_firm_writer_test;
 GRANT SELECT (role_id, permission_id, is_active)
     ON public.role_permissions TO phase3a1_firm_writer_test;
-GRANT SELECT (id, application_id, code, is_active)
+GRANT SELECT (id, application_id, code, is_active, scope_type)
     ON public.permissions TO phase3a1_firm_writer_test;
 GRANT SELECT (id, user_id, application_id, role_id, is_active, valid_from, valid_to)
     ON public.user_application_roles TO phase3a1_firm_writer_test;

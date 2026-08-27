@@ -1,6 +1,9 @@
 import {
+  BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -33,6 +36,23 @@ export interface BasePermissionContext {
   requiresDomainPolicy: true;
 }
 
+export interface FirmMaster {
+  baseCurrencyId: string;
+  code: string;
+  countryId: string;
+  createdAt: string;
+  defaultLanguageId: string | null;
+  id: string;
+  isActive: boolean;
+  legalFormId: string | null;
+  name: string;
+  registrationNumber: string | null;
+  rowVersion: string;
+  shortName: string | null;
+  timezone: string;
+  updatedAt: string;
+}
+
 interface BaseDecision {
   allowed: boolean;
   authorizationLevel: 'base';
@@ -49,6 +69,15 @@ export abstract class SharedCoreAuthorizationClient {
     firmId: string,
     permission: string,
   ): Promise<BaseDecision>;
+  abstract listAdminFirms(token: string): Promise<FirmMaster[]>;
+  abstract getAdminFirm(token: string, firmId: string): Promise<FirmMaster>;
+  abstract createFirm(token: string, body: unknown): Promise<FirmMaster>;
+  abstract firmCommand(
+    token: string,
+    method: 'PATCH' | 'POST',
+    path: string,
+    body: unknown,
+  ): Promise<FirmMaster>;
 }
 
 @Injectable()
@@ -87,6 +116,24 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
     );
   }
 
+  async listAdminFirms(token: string): Promise<FirmMaster[]> {
+    return this.request('/firms', token);
+  }
+  async getAdminFirm(token: string, firmId: string): Promise<FirmMaster> {
+    return this.request(`/firms/${encodeURIComponent(firmId)}`, token);
+  }
+  async createFirm(token: string, body: unknown): Promise<FirmMaster> {
+    return this.request('/firms', token, 'POST', body);
+  }
+  async firmCommand(
+    token: string,
+    method: 'PATCH' | 'POST',
+    path: string,
+    body: unknown,
+  ): Promise<FirmMaster> {
+    return this.request(`/firms/${path}`, token, method, body);
+  }
+
   private async requireOfficeAccess(token: string, firmId: string): Promise<void> {
     const applications = await this.listFirmApplications(token, firmId);
     if (!applications.some((application) => application.code === 'OFFICE')) {
@@ -95,18 +142,48 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
   }
 
   private async get<T>(path: string, token: string): Promise<T> {
+    return this.request(path, token);
+  }
+
+  private async request<T>(
+    path: string,
+    token: string,
+    method: 'GET' | 'PATCH' | 'POST' = 'GET',
+    body?: unknown,
+  ): Promise<T> {
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
-        headers: { authorization: `Bearer ${token}` },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        headers: {
+          authorization: `Bearer ${token}`,
+          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        },
+        method,
         signal: AbortSignal.timeout(5000),
       });
     } catch {
       throw new ServiceUnavailableException('Shared Core authorization is unavailable');
     }
     if (response.status === 401) throw new UnauthorizedException('Authentication was rejected');
-    if (response.status === 403 || response.status === 404) {
-      throw new ForbiddenException('Office authorization is denied');
+    if (response.status === 403) throw new ForbiddenException('Office authorization is denied');
+    if (response.status === 404) throw new NotFoundException('Firm not found');
+    if (response.status === 400) throw new BadRequestException('Firm command is invalid');
+    if (response.status === 409) {
+      let code = 'FIRM_COMMAND_CONFLICT';
+      try {
+        const problem = (await response.json()) as { code?: unknown };
+        if (problem.code === 'ROW_VERSION_CONFLICT' || problem.code === 'FIRM_CODE_CONFLICT') {
+          code = problem.code;
+        }
+      } catch {
+        // The public fallback remains intentionally generic.
+      }
+      throw new ConflictException({
+        code,
+        message: 'Firm command conflicts with current state',
+        statusCode: 409,
+      });
     }
     if (!response.ok)
       throw new ServiceUnavailableException('Shared Core authorization is unavailable');
