@@ -59,6 +59,12 @@ export interface FirmMaster {
   updatedAt: string;
 }
 
+export interface FirmRoleCatalogItem {
+  code: string;
+  id: string;
+  name: string;
+}
+
 interface BaseDecision {
   allowed: boolean;
   authorizationLevel: 'base';
@@ -92,6 +98,7 @@ export abstract class SharedCoreAuthorizationClient {
   abstract provisioningCommand(path: string, token: string, body: unknown): Promise<unknown>;
   abstract userAdminRead(path: string, token: string): Promise<unknown>;
   abstract referenceData(catalog: string, token: string): Promise<unknown[]>;
+  abstract firmRoles(token: string): Promise<FirmRoleCatalogItem[]>;
   abstract userAdminCommand(path: string, token: string, body?: unknown): Promise<unknown>;
   abstract redeemInvitation(token: string, body: unknown): Promise<unknown>;
 }
@@ -167,6 +174,9 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
   }
   async referenceData(catalog: string, token: string): Promise<unknown[]> {
     return this.request(`/reference-data/${encodeURIComponent(catalog)}`, token);
+  }
+  async firmRoles(token: string): Promise<FirmRoleCatalogItem[]> {
+    return this.request('/firm-roles', token);
   }
   async userAdminCommand(path: string, token: string, body?: unknown): Promise<unknown> {
     return this.request(`/users${path}`, token, 'POST', body ?? {});

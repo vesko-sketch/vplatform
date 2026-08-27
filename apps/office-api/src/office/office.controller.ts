@@ -19,6 +19,7 @@ import {
   type AccessibleFirm,
   type ApplicationPermissionContext,
   type FirmMaster,
+  type FirmRoleCatalogItem,
   type PlatformIdentity,
   SharedCoreAuthorizationClient,
 } from '../shared-core/shared-core.client.js';
@@ -104,6 +105,12 @@ export class OfficeController {
   @ApiOperation({ summary: 'List the delegated Shared Core firm administration catalog' })
   adminFirms(@Req() request: AuthenticatedOfficeRequest): Promise<FirmMaster[]> {
     return this.sharedCore.listAdminFirms(token(request));
+  }
+
+  @Get('admin/roles')
+  @ApiOperation({ summary: 'List active Shared Core firm roles for administration' })
+  firmRoles(@Req() request: AuthenticatedOfficeRequest): Promise<FirmRoleCatalogItem[]> {
+    return this.sharedCore.firmRoles(token(request));
   }
 
   @Get('admin/firms/:firmId')

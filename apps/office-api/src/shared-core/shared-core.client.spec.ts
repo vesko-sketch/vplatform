@@ -105,4 +105,14 @@ describe('HttpSharedCoreAuthorizationClient', () => {
     for (const [, options] of fetchMock.mock.calls)
       expect(options).toMatchObject({ headers: { authorization: 'Bearer token' } });
   });
+
+  it('delegates the firm-role catalog without database context', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json([{ code: 'admin' }]));
+    vi.stubGlobal('fetch', fetchMock);
+    await new HttpSharedCoreAuthorizationClient().firmRoles('validated-token');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://shared-core.internal:3001/firm-roles',
+      expect.objectContaining({ headers: { authorization: 'Bearer validated-token' } }),
+    );
+  });
 });
