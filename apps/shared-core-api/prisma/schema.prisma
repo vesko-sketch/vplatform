@@ -22,6 +22,7 @@ model applications {
   firm_applications      firm_applications[]
   permissions            permissions[]
   user_application_roles user_application_roles[]
+  user_invitations       user_invitations[]
   user_firm_applications user_firm_applications[]
 }
 
@@ -207,7 +208,7 @@ model permissions {
   created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
   updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
   application_id             String                       @db.Uuid
-  scope_type                String                       @db.VarChar(20)
+  scope_type                 String                       @db.VarChar(20)
   permission_resource_scopes permission_resource_scopes[]
   applications               applications                 @relation(fields: [application_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   role_permissions           role_permissions[]
@@ -295,18 +296,18 @@ model role_permissions {
 }
 
 model roles {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code             String             @unique @db.VarChar(50)
-  name             String             @db.VarChar(255)
-  description      String?
-  is_active        Boolean            @default(true)
-  metadata         Json               @default("{}")
-  row_version      BigInt             @default(1)
-  created_at       DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
-  role_permissions role_permissions[]
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                   String                   @unique @db.VarChar(50)
+  name                   String                   @db.VarChar(255)
+  description            String?
+  is_active              Boolean                  @default(true)
+  metadata               Json                     @default("{}")
+  row_version            BigInt                   @default(1)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  role_permissions       role_permissions[]
   user_application_roles user_application_roles[]
-  user_firm_roles  user_firm_roles[]
+  user_firm_roles        user_firm_roles[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -398,35 +399,71 @@ model users {
   email                     String                      @unique @db.VarChar(255)
   display_name              String?                     @db.VarChar(255)
   is_active                 Boolean                     @default(true)
+  lifecycle_status          String                      @db.VarChar(20)
   metadata                  Json                        @default("{}")
   row_version               BigInt                      @default(1)
   created_at                DateTime                    @default(now()) @db.Timestamptz(6)
   updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
   user_external_identities  user_external_identities[]
+  invitations_received      user_invitations[]          @relation("InvitationTargetUser")
+  invitations_created       user_invitations[]          @relation("InvitationCreator")
+  invitations_cancelled     user_invitations[]          @relation("InvitationCanceller")
   user_application_roles    user_application_roles[]
   user_firm_applications    user_firm_applications[]
   user_firm_roles           user_firm_roles[]
   user_permission_overrides user_permission_overrides[]
 }
 
+/// Invitation tokens are represented only by a SHA-256 digest. State/check constraints and
+/// partial unique indexes remain authoritative in the reviewed PostgreSQL migration.
+model user_invitations {
+  id                   String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String                    @db.Uuid
+  application_id       String                    @db.Uuid
+  invited_email        String                    @db.VarChar(255)
+  normalized_email     String                    @db.VarChar(255)
+  token_digest         Bytes                     @unique(map: "user_invitations_token_digest_key")
+  status               String                    @default("PENDING") @db.VarChar(20)
+  expires_at           DateTime                  @db.Timestamptz(6)
+  consumed_at          DateTime?                 @db.Timestamptz(6)
+  consumed_identity_id String?                   @db.Uuid
+  cancelled_at         DateTime?                 @db.Timestamptz(6)
+  cancelled_by         String?                   @db.Uuid
+  cancellation_reason  String?
+  created_by           String                    @db.Uuid
+  request_id           String?                   @db.Uuid
+  correlation_id       String?                   @db.Uuid
+  row_version          BigInt                    @default(1)
+  created_at           DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                  @default(now()) @db.Timestamptz(6)
+  applications         applications              @relation(fields: [application_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  target_user          users                     @relation("InvitationTargetUser", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  creator              users                     @relation("InvitationCreator", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  canceller            users?                    @relation("InvitationCanceller", fields: [cancelled_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  consumed_identity    user_external_identities? @relation(fields: [consumed_identity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([application_id, status, created_at(sort: Desc)], map: "idx_user_invitations_application_status")
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model user_external_identities {
-  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id              String   @db.Uuid
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String             @db.Uuid
   issuer               String
   subject              String
-  status               String   @default("active") @db.VarChar(20)
-  link_provenance      String   @db.VarChar(30)
-  linked_by            String?  @db.Uuid
-  linked_at            DateTime @default(now()) @db.Timestamptz(6)
-  status_changed_by    String?  @db.Uuid
-  status_changed_at    DateTime @default(now()) @db.Timestamptz(6)
+  status               String             @default("active") @db.VarChar(20)
+  link_provenance      String             @db.VarChar(30)
+  linked_by            String?            @db.Uuid
+  linked_at            DateTime           @default(now()) @db.Timestamptz(6)
+  status_changed_by    String?            @db.Uuid
+  status_changed_at    DateTime           @default(now()) @db.Timestamptz(6)
   status_change_reason String?
-  metadata             Json     @default("{}")
-  row_version          BigInt   @default(1)
-  created_at           DateTime @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime @default(now()) @db.Timestamptz(6)
-  users                users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metadata             Json               @default("{}")
+  row_version          BigInt             @default(1)
+  created_at           DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime           @default(now()) @db.Timestamptz(6)
+  users                users              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  consumed_invitations user_invitations[]
 
   @@unique([issuer, subject])
   @@index([user_id, status], map: "idx_user_external_identities_user_status")

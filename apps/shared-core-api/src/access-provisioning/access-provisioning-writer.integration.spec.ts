@@ -54,6 +54,7 @@ describe.skipIf(!enabled)('access provisioning writer integration', () => {
       data: [ids.admin, ids.manager, ids.accountant, ids.client, ids.target].map((id, index) => ({
         email: `provision-${index}@example.test`,
         id,
+        lifecycle_status: 'ACTIVE',
       })),
     });
     await prisma.firms.create({

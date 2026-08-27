@@ -33,7 +33,9 @@ describe.skipIf(!enabled)('FirmWriterService disposable PostgreSQL integration',
     await prisma.ref_currencies.create({
       data: { id: ids.currency, iso_code: 'YFC', name: 'Firm command currency' },
     });
-    await prisma.users.create({ data: { id: ids.user, email: 'firm-command@example.test' } });
+    await prisma.users.create({
+      data: { id: ids.user, email: 'firm-command@example.test', lifecycle_status: 'ACTIVE' },
+    });
     await prisma.user_application_roles.create({
       data: { user_id: ids.user, application_id: officeId, role_id: adminId },
     });

@@ -49,7 +49,11 @@ describe.skipIf(!enabled)('AuthorizationService disposable PostgreSQL integratio
       data: { id: ids.currency, iso_code: 'ZZZ', name: 'Disposable test currency' },
     });
     await prisma.users.create({
-      data: { email: 'authorization-integration@example.test', id: ids.user },
+      data: {
+        email: 'authorization-integration@example.test',
+        id: ids.user,
+        lifecycle_status: 'ACTIVE',
+      },
     });
     await prisma.firms.createMany({
       data: [
