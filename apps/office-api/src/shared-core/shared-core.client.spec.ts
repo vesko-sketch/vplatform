@@ -63,4 +63,29 @@ describe('HttpSharedCoreAuthorizationClient', () => {
       }),
     );
   });
+
+  it('delegates provisioning reads and commands without database context', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json([]))
+      .mockResolvedValueOnce(Response.json({ id: 'relationship-id' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new HttpSharedCoreAuthorizationClient();
+    await client.provisioningRead('firm-id/applications', 'validated-token');
+    await client.provisioningCommand('firm-id/applications/OFFICE/enable', 'validated-token', {});
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'http://shared-core.internal:3001/firms/firm-id/applications',
+      expect.objectContaining({ headers: { authorization: 'Bearer validated-token' } }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://shared-core.internal:3001/firms/firm-id/applications/OFFICE/enable',
+      expect.objectContaining({
+        body: '{}',
+        headers: { authorization: 'Bearer validated-token', 'content-type': 'application/json' },
+        method: 'POST',
+      }),
+    );
+  });
 });

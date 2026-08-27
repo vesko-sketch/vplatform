@@ -12,7 +12,8 @@
     "pretest": "pnpm --filter @vplatform/oidc-auth build",
     "test": "vitest run",
     "test:authorization:integration": "vitest run src/authorization/authorization.integration.spec.ts",
-    "test:firms:integration": "vitest run src/firms/firm-writer.integration.spec.ts"
+    "test:firms:integration": "vitest run src/firms/firm-writer.integration.spec.ts",
+    "test:access-provisioning:integration": "vitest run src/access-provisioning/access-provisioning-writer.integration.spec.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.1",

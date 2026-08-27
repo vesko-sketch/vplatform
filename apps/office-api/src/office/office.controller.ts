@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Body,
   ForbiddenException,
@@ -168,6 +169,94 @@ export class OfficeController {
       token(request),
       'POST',
       `${encodeURIComponent(firmId)}/activate`,
+      body,
+    );
+  }
+
+  @Get('admin/firms/:firmId/applications')
+  provisionedApplications(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('firmId', ParseUUIDPipe) firmId: string,
+  ): Promise<unknown[]> {
+    return this.sharedCore.provisioningRead(
+      `${encodeURIComponent(firmId)}/applications`,
+      token(request),
+    );
+  }
+
+  @Get('admin/firms/:firmId/applications/:applicationCode/users')
+  provisionedUsers(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('firmId', ParseUUIDPipe) firmId: string,
+    @Param('applicationCode') applicationCode: string,
+  ): Promise<unknown[]> {
+    return this.sharedCore.provisioningRead(
+      `${encodeURIComponent(firmId)}/applications/${encodeURIComponent(applicationCode)}/users`,
+      token(request),
+    );
+  }
+
+  @Get('admin/firms/:firmId/users/:userId/roles')
+  provisionedRoles(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('firmId', ParseUUIDPipe) firmId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<unknown[]> {
+    return this.sharedCore.provisioningRead(
+      `${encodeURIComponent(firmId)}/users/${encodeURIComponent(userId)}/roles`,
+      token(request),
+    );
+  }
+
+  @Post('admin/firms/:firmId/applications/:applicationCode/:command')
+  firmApplicationCommand(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('firmId', ParseUUIDPipe) firmId: string,
+    @Param('applicationCode') applicationCode: string,
+    @Param('command') command: 'enable' | 'disable',
+    @Body() body: unknown,
+  ): Promise<unknown> {
+    if (command !== 'enable' && command !== 'disable')
+      throw new BadRequestException('Unknown firm-application command');
+    return this.sharedCore.provisioningCommand(
+      `${encodeURIComponent(firmId)}/applications/${encodeURIComponent(applicationCode)}/${encodeURIComponent(command)}`,
+      token(request),
+      body,
+    );
+  }
+
+  @Post('admin/firms/:firmId/applications/:applicationCode/users/:userId/:command')
+  userAccessCommand(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('firmId', ParseUUIDPipe) firmId: string,
+    @Param('applicationCode') applicationCode: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('command') command: 'grant' | 'revoke',
+    @Body() body: unknown,
+  ): Promise<unknown> {
+    if (command !== 'grant' && command !== 'revoke')
+      throw new BadRequestException('Unknown user-access command');
+    return this.sharedCore.provisioningCommand(
+      `${encodeURIComponent(firmId)}/applications/${encodeURIComponent(applicationCode)}/users/${encodeURIComponent(userId)}/${encodeURIComponent(command)}`,
+      token(request),
+      body,
+    );
+  }
+
+  @Post('admin/firms/:firmId/users/:userId/roles/:roleCode/:command')
+  userRoleCommand(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('firmId', ParseUUIDPipe) firmId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('roleCode') roleCode: string,
+    @Param('command') command: 'assign' | 'remove',
+    @Body() body: unknown,
+  ): Promise<unknown> {
+    if (command !== 'assign' && command !== 'remove')
+      throw new BadRequestException('Unknown role command');
+    return this.sharedCore.provisioningCommand(
+      `${encodeURIComponent(firmId)}/users/${encodeURIComponent(userId)}/roles/${encodeURIComponent(roleCode)}/${encodeURIComponent(command)}`,
+      token(request),
       body,
     );
   }

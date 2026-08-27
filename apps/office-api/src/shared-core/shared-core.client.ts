@@ -78,6 +78,8 @@ export abstract class SharedCoreAuthorizationClient {
     path: string,
     body: unknown,
   ): Promise<FirmMaster>;
+  abstract provisioningRead(path: string, token: string): Promise<unknown[]>;
+  abstract provisioningCommand(path: string, token: string, body: unknown): Promise<unknown>;
 }
 
 @Injectable()
@@ -133,6 +135,12 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
   ): Promise<FirmMaster> {
     return this.request(`/firms/${path}`, token, method, body);
   }
+  async provisioningRead(path: string, token: string): Promise<unknown[]> {
+    return this.request(`/firms/${path}`, token);
+  }
+  async provisioningCommand(path: string, token: string, body: unknown): Promise<unknown> {
+    return this.request(`/firms/${path}`, token, 'POST', body);
+  }
 
   private async requireOfficeAccess(token: string, firmId: string): Promise<void> {
     const applications = await this.listFirmApplications(token, firmId);
@@ -173,7 +181,12 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
       let code = 'FIRM_COMMAND_CONFLICT';
       try {
         const problem = (await response.json()) as { code?: unknown };
-        if (problem.code === 'ROW_VERSION_CONFLICT' || problem.code === 'FIRM_CODE_CONFLICT') {
+        if (
+          problem.code === 'ROW_VERSION_CONFLICT' ||
+          problem.code === 'FIRM_CODE_CONFLICT' ||
+          problem.code === 'RELATIONSHIP_STATE_CONFLICT' ||
+          problem.code === 'DEPENDENT_ACTIVE_USER_ACCESS'
+        ) {
           code = problem.code;
         }
       } catch {

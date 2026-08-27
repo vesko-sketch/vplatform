@@ -1,4 +1,4 @@
-# Shared Core access provisioning (Phase 3A.5 review)
+# Shared Core access provisioning
 
 ## Bootstrap authorization decision
 
@@ -42,7 +42,19 @@ The Shared Core endpoint performs a preliminary read authorization check and rep
 
 Audit payloads contain allowlisted identifiers, validity/state transitions, request/correlation IDs, and required reasons; they never contain tokens or credentials.
 
-## Proposed API
+## Runtime boundaries and concurrency
+
+`shared_core_api` remains the read-only authorization/query connection. Mutations use only
+`shared_core_access_writer`; `shared_core_firm_writer` is not available to this module. Office API
+delegates the validated bearer token over HTTP and has no Shared Core database credential.
+
+Each write transaction takes a transaction-scoped PostgreSQL advisory lock derived from the unique
+logical relationship key. This serializes insert/reactivation races without requiring table-wide
+UPDATE privileges. Existing-row changes additionally use `row_version` in the UPDATE predicate and
+return `ROW_VERSION_CONFLICT` for a stale expected version. Exact-state retries are successful and
+do not create a second audit event.
+
+## API
 
 Commands:
 
@@ -61,6 +73,6 @@ Read administration views use the corresponding APPLICATION permission and retur
 
 These routes are distinct from ordinary `/me` authorization context. Office API may proxy them with a validated user token; it receives no Shared Core database credential.
 
-## Execution gate
-
-The catalog migration and `shared_core_access_writer` role are review artifacts only in Phase 3A.5. Live migration, role creation, grants, provisioning endpoints, and development assignments require a separate explicit execution approval.
+The corresponding Office API routes are under `/office/admin/firms/:firmId/...`; Office only
+authenticates and delegates them. Shared Core performs both the preliminary authorization decision
+and the repeated transaction-local APPLICATION-scope decision.
