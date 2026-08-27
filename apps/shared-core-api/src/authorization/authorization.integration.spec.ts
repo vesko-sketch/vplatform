@@ -227,6 +227,82 @@ describe.skipIf(!enabled)('AuthorizationService disposable PostgreSQL integratio
     }
   });
 
+  it('isolates provisioning-read permissions by assignment and authorization scope', async () => {
+    const readPermissions = ['firms.applications.view', 'firms.access.view', 'firms.roles.view'];
+    const firmReadPermissions = ['applications.view', 'access.view', 'roles.view'];
+
+    for (const permissionCode of readPermissions) {
+      await expect(
+        service.canAtApplicationScope({
+          applicationCode: 'OFFICE',
+          evaluatedAt: at,
+          permissionCode,
+          platformUserId: ids.user,
+        }),
+      ).resolves.toMatchObject({ basePermissionGranted: false, reason: 'no_active_role' });
+    }
+
+    for (const [roleId, expected] of [
+      [adminRoleId, true],
+      [managerRoleId, true],
+      [accountantRoleId, false],
+    ] as const) {
+      const assignment = await prisma.user_application_roles.create({
+        data: { application_id: officeId, role_id: roleId, user_id: ids.user },
+      });
+      try {
+        for (const permissionCode of readPermissions) {
+          await expect(
+            service.canAtApplicationScope({
+              applicationCode: 'OFFICE',
+              evaluatedAt: at,
+              permissionCode,
+              platformUserId: ids.user,
+            }),
+          ).resolves.toMatchObject({
+            basePermissionGranted: expected,
+            reason: expected ? 'allowed' : 'permission_not_granted',
+          });
+          await expect(
+            service.can({
+              applicationCode: 'OFFICE',
+              evaluatedAt: at,
+              firmId: ids.firmA,
+              permissionCode,
+              platformUserId: ids.user,
+            }),
+          ).resolves.toMatchObject({
+            basePermissionGranted: false,
+            reason: 'permission_wrong_scope',
+          });
+        }
+      } finally {
+        await prisma.user_application_roles.delete({ where: { id: assignment.id } });
+      }
+    }
+
+    const assignment = await prisma.user_application_roles.create({
+      data: { application_id: officeId, role_id: adminRoleId, user_id: ids.user },
+    });
+    try {
+      for (const permissionCode of firmReadPermissions) {
+        await expect(
+          service.canAtApplicationScope({
+            applicationCode: 'OFFICE',
+            evaluatedAt: at,
+            permissionCode,
+            platformUserId: ids.user,
+          }),
+        ).resolves.toMatchObject({
+          basePermissionGranted: false,
+          reason: 'permission_wrong_scope',
+        });
+      }
+    } finally {
+      await prisma.user_application_roles.delete({ where: { id: assignment.id } });
+    }
+  });
+
   it('applies real application-role defaults and validity windows', async () => {
     const accountantAssignment = await prisma.user_application_roles.create({
       data: { application_id: officeId, role_id: accountantRoleId, user_id: ids.user },
