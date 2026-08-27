@@ -9,6 +9,8 @@ export interface OidcResourceServerConfig {
 
 export interface AuthenticationClaims {
   audience: string[];
+  email?: string;
+  emailVerified?: boolean;
   issuer: string;
   preferredUsername?: string;
   subject: string;
@@ -36,8 +38,12 @@ export class OidcTokenVerifier {
       throw new Error('Token must contain issuer and subject claims');
     }
     const preferredUsername = payload.preferred_username;
+    const email = payload.email;
+    const emailVerified = payload.email_verified;
     return {
       audience: normalizeAudience(payload.aud),
+      ...(typeof email === 'string' ? { email } : {}),
+      ...(typeof emailVerified === 'boolean' ? { emailVerified } : {}),
       issuer: payload.iss,
       ...(typeof preferredUsername === 'string' ? { preferredUsername } : {}),
       subject: payload.sub,

@@ -96,6 +96,7 @@ describe('TokenVerifier', () => {
   it('accepts a valid token and returns authentication claims only', async () => {
     await expect(verifier.verify(await signToken())).resolves.toEqual({
       audience: ['shared-core-api'],
+      email: 'mutable@example.test',
       issuer,
       preferredUsername: 'development-user',
       subject: 'keycloak-subject-123',

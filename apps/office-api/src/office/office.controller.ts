@@ -260,4 +260,82 @@ export class OfficeController {
       body,
     );
   }
+
+  @Get('admin/users')
+  users(@Req() request: AuthenticatedOfficeRequest): Promise<unknown> {
+    return this.sharedCore.userAdminRead('', token(request));
+  }
+
+  @Get('admin/users/:userId')
+  user(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<unknown> {
+    return this.sharedCore.userAdminRead(`/${encodeURIComponent(userId)}`, token(request));
+  }
+
+  @Get('admin/users/:userId/invitations')
+  userInvitations(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<unknown> {
+    return this.sharedCore.userAdminRead(
+      `/${encodeURIComponent(userId)}/invitations`,
+      token(request),
+    );
+  }
+
+  @Post('admin/users/invitations')
+  inviteUser(@Req() request: AuthenticatedOfficeRequest, @Body() body: unknown): Promise<unknown> {
+    return this.sharedCore.userAdminCommand('/invitations', token(request), body);
+  }
+
+  @Post('admin/users/:userId/invitations/reissue')
+  reissueInvitation(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<unknown> {
+    return this.sharedCore.userAdminCommand(
+      `/${encodeURIComponent(userId)}/invitations/reissue`,
+      token(request),
+    );
+  }
+
+  @Post('admin/users/:userId/invitations/:invitationId/cancel')
+  cancelInvitation(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('invitationId', ParseUUIDPipe) invitationId: string,
+    @Body() body: unknown,
+  ): Promise<unknown> {
+    return this.sharedCore.userAdminCommand(
+      `/${encodeURIComponent(userId)}/invitations/${encodeURIComponent(invitationId)}/cancel`,
+      token(request),
+      body,
+    );
+  }
+
+  @Post('admin/users/:userId/:command')
+  userLifecycle(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('command') command: 'disable' | 'reactivate',
+    @Body() body: unknown,
+  ): Promise<unknown> {
+    if (command !== 'disable' && command !== 'reactivate')
+      throw new BadRequestException('Unknown user lifecycle command');
+    return this.sharedCore.userAdminCommand(
+      `/${encodeURIComponent(userId)}/${command}`,
+      token(request),
+      body,
+    );
+  }
+
+  @Post('invitations/redeem')
+  redeemInvitation(
+    @Req() request: AuthenticatedOfficeRequest,
+    @Body() body: unknown,
+  ): Promise<unknown> {
+    return this.sharedCore.redeemInvitation(token(request), body);
+  }
 }

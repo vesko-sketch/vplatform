@@ -1,6 +1,6 @@
 # Platform user lifecycle and invitations (Phase 3A.6 review)
 
-Status: review-only. No live migration, role, user, invitation, identity, or access change is authorized.
+Status: database foundation live; Phase 3A.6B command implementation in development.
 
 ## Boundaries and lifecycle
 
@@ -20,11 +20,10 @@ intent. A separate linking-intent table would duplicate target, expiry, cancella
 consumption state; recovery/relinking is a distinct future high-risk model.
 
 Invitation creation atomically creates an `INVITED`/inactive user, a 48-hour `PENDING` invitation,
-audit events, and a `user.invitation.created` outbox event. It creates no access or role rows. The
-raw 256-bit random URL token is returned once and only its SHA-256 digest is stored. Any asynchronous
-delivery event requiring the token must contain a recipient-service encrypted envelope and key ID,
-never plaintext; encryption keys stay outside PostgreSQL. This delivery-envelope choice requires
-explicit implementation review.
+and audit events. It creates no access or role rows. The raw 256-bit random URL token is returned
+once only when both the runtime is non-production and
+`INVITATION_DEVELOPMENT_RESPONSE_ENABLED=true`; only its SHA-256 digest is stored. No invitation
+outbox event is emitted until a secure delivery-envelope design is separately approved.
 
 Redemption requires a valid token and a completed Keycloak Authorization Code + PKCE flow. Shared
 Core rechecks the invitation, expiry, cancellation, row version, target user, verified normalized

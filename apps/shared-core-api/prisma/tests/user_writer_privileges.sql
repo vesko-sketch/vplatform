@@ -16,6 +16,7 @@ BEGIN
     RAISE EXCEPTION 'user writer has forbidden mutation privilege';
   END IF;
   IF NOT has_column_privilege('shared_core_user_writer','public.users','lifecycle_status','UPDATE')
+     OR NOT has_column_privilege('shared_core_user_writer','public.users','email','SELECT')
      OR NOT has_column_privilege('shared_core_user_writer','public.user_invitations','status','UPDATE')
      OR NOT has_column_privilege('shared_core_user_writer','public.user_external_identities','subject','INSERT')
      OR NOT has_column_privilege('shared_core_user_writer','public.audit_log','action','INSERT')

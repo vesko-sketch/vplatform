@@ -12,6 +12,8 @@ async function token(
   overrides: { audience?: string; issuer?: string; expires?: number; nbf?: number } = {},
 ): Promise<string> {
   let jwt = new SignJWT({
+    email: 'verified@example.invalid',
+    email_verified: true,
     preferred_username: 'ignored-for-authorization',
     realm_access: { roles: ['admin'] },
   })
@@ -51,6 +53,8 @@ describe('OIDC resource-server primitives', () => {
 
   it('validates issuer, audience, expiry and not-before', async () => {
     await expect(verifier.verify(await token())).resolves.toMatchObject({
+      email: 'verified@example.invalid',
+      emailVerified: true,
       subject: 'opaque-subject',
     });
     await expect(verifier.verify(await token({ audience: 'shared-core-api' }))).rejects.toThrow();

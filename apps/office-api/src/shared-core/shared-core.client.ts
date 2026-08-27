@@ -80,6 +80,9 @@ export abstract class SharedCoreAuthorizationClient {
   ): Promise<FirmMaster>;
   abstract provisioningRead(path: string, token: string): Promise<unknown[]>;
   abstract provisioningCommand(path: string, token: string, body: unknown): Promise<unknown>;
+  abstract userAdminRead(path: string, token: string): Promise<unknown>;
+  abstract userAdminCommand(path: string, token: string, body?: unknown): Promise<unknown>;
+  abstract redeemInvitation(token: string, body: unknown): Promise<unknown>;
 }
 
 @Injectable()
@@ -141,6 +144,15 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
   async provisioningCommand(path: string, token: string, body: unknown): Promise<unknown> {
     return this.request(`/firms/${path}`, token, 'POST', body);
   }
+  async userAdminRead(path: string, token: string): Promise<unknown> {
+    return this.request(`/users${path}`, token);
+  }
+  async userAdminCommand(path: string, token: string, body?: unknown): Promise<unknown> {
+    return this.request(`/users${path}`, token, 'POST', body ?? {});
+  }
+  async redeemInvitation(token: string, body: unknown): Promise<unknown> {
+    return this.request('/invitations/redeem', token, 'POST', body);
+  }
 
   private async requireOfficeAccess(token: string, firmId: string): Promise<void> {
     const applications = await this.listFirmApplications(token, firmId);
@@ -175,8 +187,9 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
     }
     if (response.status === 401) throw new UnauthorizedException('Authentication was rejected');
     if (response.status === 403) throw new ForbiddenException('Office authorization is denied');
-    if (response.status === 404) throw new NotFoundException('Firm not found');
-    if (response.status === 400) throw new BadRequestException('Firm command is invalid');
+    if (response.status === 404)
+      throw new NotFoundException('Requested administration resource not found');
+    if (response.status === 400) throw new BadRequestException('Administration command is invalid');
     if (response.status === 409) {
       let code = 'FIRM_COMMAND_CONFLICT';
       try {
@@ -185,7 +198,12 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
           problem.code === 'ROW_VERSION_CONFLICT' ||
           problem.code === 'FIRM_CODE_CONFLICT' ||
           problem.code === 'RELATIONSHIP_STATE_CONFLICT' ||
-          problem.code === 'DEPENDENT_ACTIVE_USER_ACCESS'
+          problem.code === 'DEPENDENT_ACTIVE_USER_ACCESS' ||
+          problem.code === 'USER_EMAIL_REVIEW_REQUIRED' ||
+          problem.code === 'INVITATION_STATE_CONFLICT' ||
+          problem.code === 'USER_STATE_CONFLICT' ||
+          problem.code === 'ACTIVE_IDENTITY_REQUIRED' ||
+          problem.code === 'EXTERNAL_IDENTITY_CONFLICT'
         ) {
           code = problem.code;
         }
@@ -194,7 +212,7 @@ export class HttpSharedCoreAuthorizationClient extends SharedCoreAuthorizationCl
       }
       throw new ConflictException({
         code,
-        message: 'Firm command conflicts with current state',
+        message: 'Administration command conflicts with current state',
         statusCode: 409,
       });
     }

@@ -9,7 +9,7 @@ GRANT CONNECT ON DATABASE shared_core TO shared_core_user_writer;
 GRANT USAGE ON SCHEMA public TO shared_core_user_writer;
 
 GRANT SELECT (id, code, is_active) ON public.applications TO shared_core_user_writer;
-GRANT SELECT (id, is_active, lifecycle_status, row_version) ON public.users TO shared_core_user_writer;
+GRANT SELECT (id, email, is_active, lifecycle_status, row_version) ON public.users TO shared_core_user_writer;
 GRANT SELECT (id, user_id, issuer, subject, status, row_version)
     ON public.user_external_identities TO shared_core_user_writer;
 GRANT SELECT (id, user_id, application_id, role_id, valid_from, valid_to, is_active)
