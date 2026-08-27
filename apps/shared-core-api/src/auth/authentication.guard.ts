@@ -1,18 +1,17 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { extractBearerToken as extractOidcBearerToken } from '@vplatform/oidc-auth';
 
 import type { AuthenticatedRequest } from './auth.types.js';
 import { TokenVerifier } from './token-verifier.js';
 
 export function extractBearerToken(authorization: string | string[] | undefined): string {
-  if (typeof authorization !== 'string') {
-    throw new UnauthorizedException('Bearer token is required');
+  try {
+    return extractOidcBearerToken(authorization);
+  } catch (error) {
+    throw new UnauthorizedException(
+      error instanceof Error ? error.message : 'Bearer token is invalid',
+    );
   }
-
-  const match = /^Bearer ([^\s]+)$/i.exec(authorization);
-  if (match?.[1] === undefined) {
-    throw new UnauthorizedException('Authorization header must use the Bearer scheme');
-  }
-  return match[1];
 }
 
 @Injectable()

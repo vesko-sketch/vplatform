@@ -7,10 +7,12 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
+    "pretest": "pnpm --filter @vplatform/oidc-auth build",
     "test": "vitest run"
   },
   "dependencies": {
     "@vplatform/identity-config": "workspace:*",
+    "@vplatform/oidc-auth": "workspace:*",
     "@nestjs/common": "^11.1.9",
     "@nestjs/core": "^11.1.9",
     "@nestjs/platform-express": "^11.1.9",
@@ -19,6 +21,7 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
-    "@nestjs/testing": "^11.1.9"
+    "@nestjs/testing": "^11.1.9",
+    "jose": "^6.1.3"
   }
 }

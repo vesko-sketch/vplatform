@@ -10,6 +10,58 @@ body {
 
 main {
   max-width: 52rem;
-  margin: 6rem auto;
+  margin: 4rem auto;
   padding: 2rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  align-items: start;
+}
+section {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  background: white;
+  border: 1px solid #dce3ea;
+  border-radius: 0.75rem;
+}
+label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+select {
+  min-width: 20rem;
+  max-width: 100%;
+  padding: 0.65rem;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+nav span {
+  padding: 0.5rem 0.75rem;
+  background: #e8f0f8;
+  border-radius: 999px;
+}
+button,
+.button {
+  display: inline-block;
+  border: 0;
+  border-radius: 0.4rem;
+  padding: 0.7rem 1rem;
+  color: white;
+  background: #174a7e;
+  text-decoration: none;
+  cursor: pointer;
+}
+.eyebrow {
+  color: #526579;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }

@@ -68,7 +68,9 @@ pnpm test
 pnpm build
 ```
 
-The Nest APIs validate their required issuer, client ID, and audience configuration before starting. They publish health routes at `/health` and generated OpenAPI documentation at `/openapi`. The Next.js applications expose `/api/health`. `shared-core-api` validates Keycloak access tokens and resolves an exact `(issuer, subject)` identity link at `/auth/me`; this does not yet grant firm or application authorization.
+The Nest APIs validate their required issuer, client ID, and audience configuration before starting. They publish health routes at `/health` and generated OpenAPI documentation at `/openapi`. The Next.js applications expose `/api/health`. `shared-core-api` validates Keycloak access tokens and resolves exact platform identity and authorization context. Office Web keeps OIDC tokens in an encrypted HttpOnly server session; Office API validates the token independently and delegates firm/permission decisions to Shared Core.
+
+For the authenticated Office shell, provide only these variables to Office Web: `OFFICE_OIDC_ISSUER_URL`, `OFFICE_OIDC_CLIENT_ID`, `OFFICE_WEB_BASE_URL`, `OFFICE_WEB_SESSION_SECRET`, and `OFFICE_API_URL`. Provide `OIDC_ISSUER_URL`, `OIDC_OFFICE_API_CLIENT_ID`, `OIDC_OFFICE_API_AUDIENCE`, `OIDC_OFFICE_API_SIGNING_ALGORITHM`, `OIDC_CLOCK_TOLERANCE_SECONDS`, `OFFICE_WEB_ORIGIN`, and `SHARED_CORE_API_URL` to Office API. Office services receive neither `SHARED_CORE_DATABASE_URL` nor `ACCOUNTING_DATABASE_URL`.
 
 ## Application responsibilities
 

@@ -1,8 +1,7 @@
 import type { AuthenticationClaims } from '@vplatform/oidc-auth';
 
-export type { AuthenticationClaims } from '@vplatform/oidc-auth';
-
-export interface AuthenticatedRequest {
+export interface AuthenticatedOfficeRequest {
   authentication?: AuthenticationClaims;
+  bearerToken?: string;
   headers: Readonly<Record<string, string | string[] | undefined>>;
 }
